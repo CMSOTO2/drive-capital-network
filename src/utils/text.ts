@@ -1,8 +1,8 @@
-/** Joins items as `a, b, or c`. */
-export const formatList = (items: readonly string[]): string =>
-  items.length > 1
-    ? `${items.slice(0, -1).join(', ')}, or ${items.at(-1)}`
-    : items.join('');
+/** Joins items as `a`, `a or b`, or `a, b, or c`. */
+export const formatList = (items: readonly string[]): string => {
+  if (items.length <= 2) return items.join(' or ');
+  return `${items.slice(0, -1).join(', ')}, or ${items.at(-1)}`;
+};
 
 /** Finds a candidate that differs from `word` only by letter case. */
 export const findCaseMismatch = (

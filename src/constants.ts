@@ -47,3 +47,19 @@ export const COMMENT_PREFIX = '#';
 export const NO_RELATIONSHIP = 'No current relationship';
 
 export const OUTPUT_FORMATS = ['text', 'json'] as const;
+
+export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
+
+export const EXIT_CODES = {
+  ok: 0,
+  /** Invalid input with --strict. */
+  invalidInput: 1,
+  /** Bad flags, unreadable file, or no input at all. */
+  usage: 2,
+} as const;
+
+/** Warnings shown before the rest are summarized as "…and N more". */
+export const MAX_PRINTED_DIAGNOSTICS = 20;
+
+/** Argument meaning "read from STDIN", as in `cat file | analyze-network -`. */
+export const STDIN_ARG = '-';

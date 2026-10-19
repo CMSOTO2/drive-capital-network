@@ -33,24 +33,30 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 ## Phase 4: CLI (`feat:`)
 
-- [ ] `src/core/pipeline.ts`: wires the stages, collects warnings with line numbers
-- [ ] `src/cli/main.ts`: file argument, STDIN (no argument or `-`), exit codes
-- [ ] Golden test: `examples/input.txt` → `examples/expected.txt`
-- [ ] Test: bad-input fixture prints warnings to stderr, a clean report to stdout, exits 0
-- [ ] Test: missing file exits 1
+- [x] `src/core/pipeline.ts`: wires the stages, collects diagnostics with line numbers
+- [x] `src/cli/main.ts`: file argument, STDIN (no argument or `-`), exit codes 0/1/2
+- [x] `src/cli/args.ts` + `src/schemas/options.ts`: `node:util` `parseArgs`, validated with Zod
+- [x] `--format json`, `--strict`, `--quiet`, `--[no-]color`, `--help`, `--version`
+- [x] Compiler-style warnings with the offending line, capped at 20, plus summary notes
+- [x] Usage error instead of hanging when STDIN is a terminal; quiet exit on `EPIPE`
+- [x] Golden tests: `examples/input.txt` and `examples/edge-cases.txt` against their expected output
+- [x] Tests: bad input warns on stderr with a clean report on stdout (exit 0); `--strict` exits 1; missing file, directory, unreadable file, and bad options exit 2
+- [x] End-to-end tests through a child process
 
 ## Phase 5: Polish (`docs:`)
 
-- [ ] Remove the _(planned)_ markers from README.md and ARCHITECTURE.md
-- [ ] Finish the README sections on LLM usage and what was challenging
-- [ ] Final read of all three docs against the code
+- [x] Remove the _(planned)_ markers from README.md and ARCHITECTURE.md
+- [x] README: usage, exit codes, JSON output, LLM usage, what was challenging
+- [x] Architecture decision records in `docs/decisions/`
+- [x] CONTRIBUTING.md, pull request template, CHANGELOG.md
+- [x] Final read of all docs against the code
 
 ## Later (not planned for the submission)
 
-- **Weighted contact types:** a coffee probably says more about a relationship than an email.
-- **`--strict` mode:** stop at the first bad line with a non-zero exit, for pipelines that want hard failures.
+- **Weighted contact types:** a coffee probably says more about a relationship than an email. This would be a weight table in `constants.ts` and one line in `Network`.
 - **Keep a raw contact log** next to the counts, to answer the prompt's other questions:
   - "Who do we know who works at ACME?"
   - "Who at Drive can introduce me to the CEO of ACME?" (needs titles and a graph traversal)
-- **Recency:** weight recent contacts above old ones.
-- **`--format json`** for other tools to consume.
+- **Recency:** weight recent contacts above old ones. The input would need timestamps.
+- **Forward references:** accept a contact before its employee or partner is declared, by buffering unresolved contacts until the end. This costs memory proportional to the unresolved contacts.
+- **Publish to npm** so `npx analyze-network` works without cloning.

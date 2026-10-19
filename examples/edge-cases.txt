@@ -1,0 +1,24 @@
+# Edge cases. Lines starting with # are comments.
+Partner Chris
+Partner Molly
+Partner Adam
+Company hooli
+Company ACME
+Company Globex
+Company Initech
+
+Employee Sarah ACME
+Employee Sarah Globex
+Employee Jamie Globex
+Employee Peter Initech
+Contact Sarah Chris email
+Contact Sarah Adam call
+Contact Jamie Molly coffee
+Contact Jamie Molly coffee
+Contact Jamie Chris Coffee
+Contact Ghost Chris call
+Contact Peter Rezzan call
+Partner Rezzan
+partner Zed
+Employee Bob
+Company Acme2

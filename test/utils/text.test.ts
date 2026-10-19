@@ -10,7 +10,7 @@ describe('formatList', () => {
   it.each([
     [[], ''],
     [['email'], 'email'],
-    [['email', 'call'], 'email, or call'],
+    [['email', 'call'], 'email or call'],
     [['email', 'call', 'coffee'], 'email, call, or coffee'],
   ])('formats %j as %j', (items, expected) => {
     expect(formatList(items)).toBe(expected);
