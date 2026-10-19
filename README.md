@@ -5,11 +5,17 @@
 A command-line tool that reads Herbie's network file (partners, companies, employees, and contacts) and prints, for each company, the Drive Capital partner with the strongest relationship to it.
 
 ```console
-$ analyze-network examples/input.txt
+$ ./analyze_network examples/input.txt
 ACME: No current relationship
 Globex: Chris (2)
 Hooli: Molly (1)
 ```
+
+> **For reviewers**
+>
+> - **Run it:** `pnpm install`, then `./analyze_network examples/input.txt` (Node 22.18+, no build step). `pnpm test` runs the tests.
+> - **The core logic** is about 450 lines in [`src/core/`](./src/core/): [`parse.ts`](./src/core/parse.ts) → [`network.ts`](./src/core/network.ts) → [`analyze.ts`](./src/core/analyze.ts) → [`format.ts`](./src/core/format.ts). Everything else is the CLI around it.
+> - **Interpretations of the prompt** are in [Assumptions and edge cases](#assumptions-and-edge-cases), and the bigger design choices are in [`docs/decisions/`](./docs/decisions/).
 
 ## Contents
 
@@ -242,11 +248,11 @@ Each of these has a short decision record in [`docs/decisions/`](./docs/decision
 
 ## How I used LLMs
 
-I used Claude Code throughout, with the same review bar I'd apply to a teammate's PR.
+I used Claude Code throughout, and treated its output like a teammate's work: plan first, then tests, git hooks, and CI on every change.
 
-- **Planning:** I gave it the prompt and asked for a plan before any code. We agreed on the pipeline, the data model, and the edge-case table above. I made the design calls: ties, lenient error handling, counting at ingest, and a CLI over a web UI.
+- **Planning:** I gave it the prompt and asked for a plan before any code. It proposed the pipeline, the data model, and the edge-case rules above (ties, lenient error handling, counting at ingest), and I approved the plan before any code was written.
 - **Tooling:** it set up TypeScript, oxlint, oxfmt, Vitest, husky, commitlint, and CI. When it was unsure of current versions or options, it checked the installed packages' schemas and the official docs, and it tested that each hook actually blocks a bad commit.
-- **Code and tests:** it implemented each roadmap phase as small Conventional Commits, writing tests alongside the code. I reviewed the diffs and steered along the way: the folder layout, splitting out schemas and constants, Zod for validation, rewriting dense code (the edit-distance function) to read plainly, and pushing on user experience, accessibility, and analytics.
+- **Code and tests:** it implemented each roadmap phase as small Conventional Commits, writing tests alongside the code. I directed the work and steered it along the way: the folder layout, splitting out schemas and constants, Zod for validation, rewriting dense code (the edit-distance function) to read plainly, and pushing on user experience, accessibility, and analytics.
 - **Product questions:** I used it as a sounding board, not just a code generator. When I asked about a web UI, it argued for putting the effort into the CLI instead. When I asked for analytics, it pointed out that sending usage data from a tool full of people's names would be a privacy problem, so we built local `--stats` and wrote down how opt-in telemetry would work instead. I agreed with both calls.
 - **Verification:** it checked its own claims instead of asserting them. Node 22 support was proven by running the full test suite under Node 22 via `npx`, not assumed, and each feature was run against the example files before being committed.
 - **Where it slipped:** a couple of times, a script that edited the docs stopped partway and the commit went in with half-updated docs, once leaving a stray `\1` in a table. It caught both on review and amended the commits before anything was pushed. That's the reason docs and code are now checked together on every commit.
