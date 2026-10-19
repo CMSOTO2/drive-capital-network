@@ -6,7 +6,8 @@ import {
   type Keyword,
 } from '../constants.ts';
 import { CommandSchema, type Command } from '../schemas/command.ts';
-import { findCaseMismatch, formatList } from '../utils/text.ts';
+import { didYouMean, suggest } from '../utils/suggest.ts';
+import { formatList } from '../utils/text.ts';
 
 export type ParseResult =
   | { status: 'skip' }
@@ -22,10 +23,10 @@ const failure = (message: string): ParseResult => ({
 });
 
 const unknownCommand = (word: string): ParseResult => {
-  const hint = findCaseMismatch(word, KEYWORDS);
+  const hint = suggest(word, KEYWORDS);
   return failure(
     hint
-      ? `unknown command "${word}" (did you mean "${hint}"?)`
+      ? `unknown command "${word}"${didYouMean(hint)}`
       : `unknown command "${word}"; expected ${formatList(KEYWORDS)}`,
   );
 };
@@ -56,10 +57,13 @@ export function parseLine(line: string): ParseResult {
     );
   }
 
-  const candidate = Object.fromEntries([
-    ['kind', kind],
-    ...fields.map((field, index) => [field, args[index]]),
-  ]);
+  // Pair each word with its field name, e.g. `Employee Laurie Globex` becomes
+  // { kind: 'employee', name: 'Laurie', company: 'Globex' }, then let the
+  // schema check the values.
+  const candidate: Record<string, string> = { kind };
+  fields.forEach((field, index) => {
+    candidate[field] = args[index] ?? '';
+  });
   const result = CommandSchema.safeParse(candidate);
   if (!result.success) {
     return failure(

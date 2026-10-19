@@ -4,16 +4,6 @@ export const formatList = (items: readonly string[]): string => {
   return `${items.slice(0, -1).join(', ')}, or ${items.at(-1)}`;
 };
 
-/** Finds a candidate that differs from `word` only by letter case. */
-export const findCaseMismatch = (
-  word: string,
-  candidates: readonly string[],
-): string | undefined =>
-  candidates.find(
-    (candidate) =>
-      candidate !== word && candidate.toLowerCase() === word.toLowerCase(),
-  );
-
 /**
  * Alphabetical order that ignores case (`ACME` < `apple` < `Globex`), with
  * plain code-unit order as a tiebreak so that `Acme` and `ACME` still sort

@@ -5,6 +5,7 @@ import type {
   EmployeeCommand,
   PartnerCommand,
 } from '../schemas/command.ts';
+import { didYouMean, suggest } from '../utils/suggest.ts';
 
 /**
  * Everything Herbie knows about Drive's network, reduced to what the report
@@ -58,7 +59,7 @@ export class Network {
 
   #addEmployee({ name, company }: EmployeeCommand): string | undefined {
     if (!this.#companies.has(company)) {
-      return `employee "${name}" works at company "${company}", which hasn't been declared`;
+      return `employee "${name}" works at company "${company}", which hasn't been declared${didYouMean(suggest(company, this.#companies))}`;
     }
     const current = this.#employeeCompany.get(name);
     if (current !== undefined && current !== company) {
@@ -68,12 +69,24 @@ export class Network {
     return undefined;
   }
 
-  #addContact({ employee, partner }: ContactCommand): string | undefined {
+  #addContact({ employee, partner, type }: ContactCommand): string | undefined {
     const company = this.#employeeCompany.get(employee);
+    const knownPartner = this.#partners.has(partner);
+
+    if (
+      company === undefined &&
+      !knownPartner &&
+      this.#partners.has(employee) &&
+      this.#employeeCompany.has(partner)
+    ) {
+      return `contact skipped: "${employee}" is a partner and "${partner}" is an employee; the order is Contact ${partner} ${employee} ${type}`;
+    }
+
     const problems = [
-      company === undefined && `employee "${employee}" hasn't been declared`,
-      !this.#partners.has(partner) &&
-        `partner "${partner}" hasn't been declared`,
+      company === undefined &&
+        `employee "${employee}" hasn't been declared${didYouMean(suggest(employee, this.#employeeCompany.keys()))}`,
+      !knownPartner &&
+        `partner "${partner}" hasn't been declared${didYouMean(suggest(partner, this.#partners))}`,
     ].filter((problem) => problem !== false);
     if (company === undefined || problems.length > 0) {
       return `contact skipped: ${problems.join(' and ')}`;

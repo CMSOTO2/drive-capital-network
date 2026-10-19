@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { CONTACT_TYPES, NAME_PATTERN } from '../constants.ts';
-import { findCaseMismatch, formatList } from '../utils/text.ts';
+import { didYouMean, suggest } from '../utils/suggest.ts';
+import { formatList } from '../utils/text.ts';
 
 const nameSchema = (label: string) =>
   z.string().regex(NAME_PATTERN, {
@@ -12,9 +13,9 @@ const nameSchema = (label: string) =>
 export const ContactTypeSchema = z.enum(CONTACT_TYPES, {
   error: (issue) => {
     const input = String(issue.input);
-    const hint = findCaseMismatch(input, CONTACT_TYPES);
+    const hint = suggest(input, CONTACT_TYPES);
     return hint
-      ? `contact type "${input}" is not valid (did you mean "${hint}"?)`
+      ? `contact type "${input}" is not valid${didYouMean(hint)}`
       : `contact type "${input}" is not one of ${formatList(CONTACT_TYPES)}`;
   },
 });

@@ -9,7 +9,7 @@ The prompt asks for companies "sorted alphabetically" and the partner with the s
 
 ## Decision
 
-Companies are sorted case-insensitively, with plain code-unit order as a tiebreak, so `ACME`, `apple`, and `Globex` sort the way a person expects, and `Acme` and `ACME` still have a fixed order. When partners tie on strength, the alphabetically first one (by the same comparison) wins. Both rules live in `compareNames` in `src/utils/text.ts`.
+Companies are sorted case-insensitively, with plain code-unit order as a tiebreak, so `ACME`, `apple`, and `Globex` sort the way a person expects, and `Acme` and `ACME` still have a fixed order. When partners tie on strength, the alphabetically first one (by the same comparison) wins. Both rules live in `compareNames` in `src/utils/text.ts`. The same comparison breaks ties between equally close "did you mean" suggestions.
 
 ## Consequences
 

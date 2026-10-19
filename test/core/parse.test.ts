@@ -93,6 +93,12 @@ describe('parseLine', () => {
       );
     });
 
+    it('suggests the right keyword for a typo', () => {
+      expect(errorOf('Contcat Laurie Chris call')).toBe(
+        'unknown command "Contcat" (did you mean "Contact"?)',
+      );
+    });
+
     it('rejects too few words and shows the usage', () => {
       expect(errorOf('Contact Laurie Chris')).toBe(
         'Contact expects 3 arguments but got 2 (usage: Contact <EmployeeName> <PartnerName> <email|call|coffee>)',
@@ -120,6 +126,12 @@ describe('parseLine', () => {
     it('suggests the right contact type when only the case is wrong', () => {
       expect(errorOf('Contact Laurie Chris Coffee')).toBe(
         'contact type "Coffee" is not valid (did you mean "coffee"?)',
+      );
+    });
+
+    it('suggests the right contact type for a typo', () => {
+      expect(errorOf('Contact Laurie Chris cofee')).toBe(
+        'contact type "cofee" is not valid (did you mean "coffee"?)',
       );
     });
 

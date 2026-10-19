@@ -22,7 +22,8 @@ src/
 │   ├── help.ts         --help text
 │   └── render.ts       warnings, notes, and color
 └── utils/
-    └── text.ts         small string helpers (list joining, case hints, name order)
+    ├── suggest.ts      "did you mean" suggestions (edit distance)
+    └── text.ts         small string helpers (list joining, name order)
 test/                   mirrors src/ (test/core/parse.test.ts, …), plus helpers/
 examples/               the prompt's example and an edge-case file, each with expected output
 docs/decisions/         architecture decision records
@@ -60,7 +61,8 @@ input (file or STDIN)
 | `src/cli/args.ts`        | `parseCliArgs(argv)`: tokenizes with `node:util` `parseArgs`, shortens Node's error messages, rejects extra positional arguments, and validates with `CliOptionsSchema`                                                                                                                                                                                        |
 | `src/cli/help.ts`        | The `--help` text, built from `COMMAND_SYNTAX`, `OUTPUT_FORMATS`, and `EXIT_CODES` so it can't fall out of date                                                                                                                                                                                                                                                |
 | `src/cli/render.ts`      | Compiler-style diagnostics (`warning: line N: …` plus the line itself), the summary notes, the `MAX_PRINTED_DIAGNOSTICS` cap, and color via `node:util` `styleText`. `shouldUseColor` honors `--color`/`--no-color`, `NO_COLOR`, `FORCE_COLOR`, and whether stderr is a terminal                                                                               |
-| `src/utils/text.ts`      | `formatList` (`a or b`, `a, b, or c`), `findCaseMismatch` (powers the "did you mean" hints), and `compareNames` (case-insensitive order with a code-unit tiebreak)                                                                                                                                                                                             |
+| `src/utils/suggest.ts`   | `suggest(word, candidates)` finds the closest candidate for a "did you mean" hint, ignoring case and allowing 0, 1, or 2 edits depending on word length (`SUGGESTION_EDIT_LIMITS`). `editDistance` counts insertions, deletions, replacements, and swapped neighbours. `didYouMean` formats the hint                                                           |
+| `src/utils/text.ts`      | `formatList` (`a or b`, `a, b, or c`) and `compareNames` (case-insensitive order with a code-unit tiebreak)                                                                                                                                                                                                                                                    |
 
 ## Data model
 
@@ -83,7 +85,22 @@ A `Contact Laurie Chris email` looks up `employeeCompany.get("Laurie")` → `Glo
 
 Parsing happens in two steps. `parse.ts` first checks the structure: is the first word a known keyword, and is the word count right? Those errors need the usage string, which Zod doesn't know about. Then the words go through `CommandSchema`, a Zod discriminated union, which checks that names are letters only and that the contact type is one of the three allowed values. All issues on a line are reported together, not only the first one.
 
-Keywords and contact types are case-sensitive, as the prompt writes them. A near miss such as `partner` or `Coffee` is still rejected, but the warning suggests the correct spelling.
+Keywords and contact types are case-sensitive, as the prompt writes them. A near miss is still rejected, but the warning suggests the likely fix.
+
+## Hints
+
+Every warning tries to say how to fix the line, not just what's wrong with it:
+
+| Mistake                                                               | Example                      | Hint                                    |
+| --------------------------------------------------------------------- | ---------------------------- | --------------------------------------- |
+| Keyword typo or wrong case                                            | `Contcat`, `partner`         | `did you mean "Contact"?`               |
+| Contact type typo or wrong case                                       | `cofee`, `Coffee`            | `did you mean "coffee"?`                |
+| Undeclared employee, partner, or company with a similar declared name | `Lauri`, `Chriss`, `Globexx` | `did you mean "Laurie"?`                |
+| Employee and partner swapped in a `Contact`                           | `Contact Chris Sarah call`   | `the order is Contact Sarah Chris call` |
+| Unknown keyword with no close match                                   | `Investor`                   | lists the four valid commands           |
+| Wrong number of words                                                 | `Employee Bob`               | shows the command's usage               |
+
+Suggestions use `suggest` in `src/utils/suggest.ts`: case is ignored, and the allowed number of edits grows with word length (none for 1–2 letters, one for 3–4, two for longer words), so short names don't get unrelated suggestions.
 
 ## Rules
 
@@ -125,6 +142,7 @@ With L lines, C companies, and P partner/company pairs that have at least one co
 - Ingest: O(L) time.
 - Analysis: O(C log C + P log P), from sorting companies and ranking each company's partners.
 - Memory: O(partners + companies + employees + P). Input is streamed, never held whole.
+- Hints: a "did you mean" lookup scans the declared names of one kind, skipping any whose length is too different, so it costs O(names) per invalid reference and nothing for valid lines.
 
 ## Tooling
 

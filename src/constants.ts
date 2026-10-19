@@ -63,3 +63,14 @@ export const MAX_PRINTED_DIAGNOSTICS = 20;
 
 /** Argument meaning "read from STDIN", as in `cat file | analyze-network -`. */
 export const STDIN_ARG = '-';
+
+/**
+ * "Did you mean" tolerance by word length. Words of 1–2 letters only match
+ * when the case differs, 3–4 letters allow one edit, longer words two.
+ */
+export const SUGGESTION_EDIT_LIMITS = [
+  { maxLength: 2, edits: 0 },
+  { maxLength: 4, edits: 1 },
+] as const;
+
+export const SUGGESTION_MAX_EDITS = 2;

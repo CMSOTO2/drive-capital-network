@@ -55,9 +55,9 @@ describe('main', () => {
       expect(stdout).toBe(
         await readFile('examples/edge-cases.expected.txt', 'utf8'),
       );
-      expect(stderr.match(/^warning:/gm)).toHaveLength(7);
+      expect(stderr.match(/^warning:/gm)).toHaveLength(11);
       expect(stderr).toContain(
-        'note: skipped 7 invalid lines; use --strict to fail instead',
+        'note: skipped 11 invalid lines; use --strict to fail instead',
       );
     });
 

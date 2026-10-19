@@ -51,6 +51,15 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] CONTRIBUTING.md, pull request template, CHANGELOG.md
 - [x] Final read of all docs against the code
 
+## Phase 6: Friendlier diagnostics (`feat:`)
+
+- [x] "Did you mean" suggestions for typos in keywords, contact types, and employee, partner, and company names
+- [x] Hint when a `Contact` lists the partner before the employee
+- [ ] Mark the offending word under the echoed line
+- [ ] Point to a later declaration when a contact refers to a name declared further down
+- [ ] `--company <name>` to report on specific companies
+- [ ] `--details` to show every partner's strength in text output
+
 ## Later (not planned for the submission)
 
 - **Weighted contact types:** a coffee probably says more about a relationship than an email. This would be a weight table in `constants.ts` and one line in `Network`.

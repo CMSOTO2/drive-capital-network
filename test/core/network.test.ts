@@ -78,6 +78,13 @@ describe('Network', () => {
       expect(strengths(network, 'ACME')).toEqual({});
     });
 
+    it('suggests a declared company with a similar name', () => {
+      network.apply(company('ACME'));
+      expect(network.apply(employee('Sam', 'Acmee'))).toBe(
+        'employee "Sam" works at company "Acmee", which hasn\'t been declared (did you mean "ACME"?)',
+      );
+    });
+
     it('keeps partners and employees in separate namespaces', () => {
       applyAll([
         partner('Alex'),
@@ -137,6 +144,18 @@ describe('Network', () => {
         'contact skipped: partner "Masha" hasn\'t been declared',
       );
       expect(strengths(network, 'Globex')).toEqual({});
+    });
+
+    it('suggests a declared employee or partner with a similar name', () => {
+      expect(network.apply(contact('Lauri', 'Chriss'))).toBe(
+        'contact skipped: employee "Lauri" hasn\'t been declared (did you mean "Laurie"?) and partner "Chriss" hasn\'t been declared (did you mean "Chris"?)',
+      );
+    });
+
+    it('spots an employee and partner given in the wrong order', () => {
+      expect(network.apply(contact('Chris', 'Laurie', 'call'))).toBe(
+        'contact skipped: "Chris" is a partner and "Laurie" is an employee; the order is Contact Laurie Chris call',
+      );
     });
 
     it('names both problems when employee and partner are undeclared', () => {
