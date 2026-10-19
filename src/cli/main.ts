@@ -7,8 +7,10 @@ import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
 
 import { EXIT_CODES } from '../constants.ts';
+import { selectCompanies } from '../core/analyze.ts';
 import { formatJsonReport, formatTextReport } from '../core/format.ts';
 import { analyzeLines, type PipelineResult } from '../core/pipeline.ts';
+import { didYouMean } from '../utils/suggest.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
 import {
@@ -134,14 +136,25 @@ export async function main(io: CliIo): Promise<number> {
   if (!options.quiet || result.aborted) {
     io.stderr.write(renderDiagnostics(result, palette));
   }
-  if (result.aborted) return EXIT_CODES.invalidInput;
+  if (result.aborted) return EXIT_CODES.inputProblem;
+
+  const { selected, missing } = selectCompanies(result.report, options.company);
+  for (const { name, suggestion } of missing) {
+    io.stderr.write(
+      renderMessage(
+        'error',
+        `company "${name}" isn't in the input${didYouMean(suggestion)}`,
+        palette,
+      ),
+    );
+  }
 
   io.stdout.write(
     options.format === 'json'
-      ? formatJsonReport(result.report)
-      : formatTextReport(result.report),
+      ? formatJsonReport(selected)
+      : formatTextReport(selected, { details: options.details }),
   );
-  return EXIT_CODES.ok;
+  return missing.length > 0 ? EXIT_CODES.inputProblem : EXIT_CODES.ok;
 }
 
 if (import.meta.main) {

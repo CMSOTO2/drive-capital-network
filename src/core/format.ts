@@ -1,17 +1,41 @@
 import { NO_RELATIONSHIP } from '../constants.ts';
 import { strongestPartner, type CompanyRelationships } from './analyze.ts';
 
-/** `<Company>: <Partner> (<strength>)` or `<Company>: No current relationship`. */
-export function formatLine(relationships: CompanyRelationships): string {
-  const best = strongestPartner(relationships);
-  return best
-    ? `${relationships.company}: ${best.partner} (${best.strength})`
-    : `${relationships.company}: ${NO_RELATIONSHIP}`;
+export interface TextOptions {
+  /** List every partner's strength instead of only the strongest. */
+  details?: boolean;
 }
 
-/** The report the prompt asks for: one line per company, newline-terminated. */
-export function formatTextReport(report: CompanyRelationships[]): string {
-  return report.map((line) => `${formatLine(line)}\n`).join('');
+/**
+ * One company's line:
+ *
+ * - `Globex: Chris (2)`: the strongest partner (the prompt's format)
+ * - `Globex: Chris (2), Molly (1)`: every partner, with `details`
+ * - `ACME: No current relationship`: nobody has contact
+ */
+export function formatLine(
+  relationships: CompanyRelationships,
+  { details = false }: TextOptions = {},
+): string {
+  const { company, partners } = relationships;
+  const best = strongestPartner(relationships);
+  if (best === undefined) {
+    return `${company}: ${NO_RELATIONSHIP}`;
+  }
+
+  const shown = details ? partners : [best];
+  const list = shown
+    .map(({ partner, strength }) => `${partner} (${strength})`)
+    .join(', ');
+  return `${company}: ${list}`;
+}
+
+/** One line per company, each ending in a newline. */
+export function formatTextReport(
+  report: CompanyRelationships[],
+  options: TextOptions = {},
+): string {
+  return report.map((line) => `${formatLine(line, options)}\n`).join('');
 }
 
 /**

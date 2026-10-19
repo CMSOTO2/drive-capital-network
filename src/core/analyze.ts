@@ -1,3 +1,4 @@
+import { suggest } from '../utils/suggest.ts';
 import { compareNames } from '../utils/text.ts';
 import type { Network } from './network.ts';
 
@@ -36,3 +37,41 @@ export function rankRelationships(network: Network): CompanyRelationships[] {
 export const strongestPartner = ({
   partners,
 }: CompanyRelationships): PartnerStrength | undefined => partners[0];
+
+export interface MissingCompany {
+  name: string;
+  /** A company in the report with a similar name, if there is one. */
+  suggestion: string | undefined;
+}
+
+export interface CompanySelection {
+  /** The requested companies that exist, in report (alphabetical) order. */
+  selected: CompanyRelationships[];
+  /** Requested names that aren't in the report, in the order requested. */
+  missing: MissingCompany[];
+}
+
+/**
+ * Narrows the report to the requested companies, for `--company`. Names must
+ * match exactly; a near miss is reported as missing with a suggestion.
+ * An empty request selects every company.
+ */
+export function selectCompanies(
+  report: CompanyRelationships[],
+  requested: readonly string[],
+): CompanySelection {
+  if (requested.length === 0) {
+    return { selected: report, missing: [] };
+  }
+
+  const wanted = new Set(requested);
+  const selected = report.filter(({ company }) => wanted.has(company));
+
+  const companyNames = report.map(({ company }) => company);
+  const found = new Set(selected.map(({ company }) => company));
+  const missing = [...wanted]
+    .filter((name) => !found.has(name))
+    .map((name) => ({ name, suggestion: suggest(name, companyNames) }));
+
+  return { selected, missing };
+}

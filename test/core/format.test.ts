@@ -26,6 +26,18 @@ describe('formatLine', () => {
   it('says when there is no relationship', () => {
     expect(formatLine(report[0]!)).toBe('ACME: No current relationship');
   });
+
+  it('lists every partner with details', () => {
+    expect(formatLine(report[1]!, { details: true })).toBe(
+      'Globex: Chris (2), Molly (1)',
+    );
+  });
+
+  it('still says when there is no relationship with details', () => {
+    expect(formatLine(report[0]!, { details: true })).toBe(
+      'ACME: No current relationship',
+    );
+  });
 });
 
 describe('formatTextReport', () => {
@@ -37,6 +49,12 @@ describe('formatTextReport', () => {
 
   it('prints nothing for an empty report', () => {
     expect(formatTextReport([])).toBe('');
+  });
+
+  it('passes details through to each line', () => {
+    expect(formatTextReport(report, { details: true })).toBe(
+      'ACME: No current relationship\nGlobex: Chris (2), Molly (1)\n',
+    );
   });
 });
 

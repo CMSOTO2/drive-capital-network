@@ -14,6 +14,8 @@ const OPTIONS = {
   quiet: { type: 'boolean', short: 'q' },
   color: { type: 'boolean' },
   format: { type: 'string', short: 'f' },
+  company: { type: 'string', short: 'c', multiple: true },
+  details: { type: 'boolean', short: 'd' },
 } as const;
 
 /** Node's parseArgs messages are long; keep the part a user needs. */

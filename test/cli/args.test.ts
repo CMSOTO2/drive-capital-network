@@ -22,7 +22,21 @@ describe('parseCliArgs', () => {
       strict: false,
       quiet: false,
       format: 'text',
+      company: [],
+      details: false,
     });
+  });
+
+  it('collects repeated --company flags and --details', () => {
+    const options = optionsOf(['-c', 'ACME', '--company', 'Hooli', '-d']);
+    expect(options.company).toEqual(['ACME', 'Hooli']);
+    expect(options.details).toBe(true);
+  });
+
+  it('rejects a --company name with non-letters', () => {
+    expect(errorOf(['--company', 'ACME Co'])).toBe(
+      '--company "ACME Co" must contain only letters A-Z or a-z',
+    );
   });
 
   it('takes a file path', () => {
@@ -43,6 +57,8 @@ describe('parseCliArgs', () => {
       quiet: true,
       color: false,
       format: 'json',
+      company: [],
+      details: false,
       file: 'in.txt',
     });
     expect(optionsOf(['--format=json']).format).toBe('json');

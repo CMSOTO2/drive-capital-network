@@ -54,19 +54,21 @@ cat file | analyze-network [options]
 
 Input comes from `file`, or from STDIN when `file` is missing or `-`. The report goes to **stdout**, and warnings go to **stderr**, so the report stays clean when piped.
 
-| Option                      | Description                                                          |
-| --------------------------- | -------------------------------------------------------------------- |
-| `-f`, `--format text\|json` | Output format. `text` (default) is the format the prompt asks for    |
-| `--strict`                  | Stop at the first invalid line and exit 1, printing no report        |
-| `-q`, `--quiet`             | Don't print warnings about skipped lines                             |
-| `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color |
-| `-h`, `--help`              | Show help                                                            |
-| `-v`, `--version`           | Show the version                                                     |
+| Option                      | Description                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `-c`, `--company <name>`    | Only report this company. Repeat for more. Exits 1 if a name isn't in the input |
+| `-d`, `--details`           | List every partner's strength, not just the strongest                           |
+| `-f`, `--format text\|json` | Output format. `text` (default) is the format the prompt asks for               |
+| `--strict`                  | Stop at the first invalid line and exit 1, printing no report                   |
+| `-q`, `--quiet`             | Don't print warnings about skipped lines                                        |
+| `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color            |
+| `-h`, `--help`              | Show help                                                                       |
+| `-v`, `--version`           | Show the version                                                                |
 
 | Exit code | Meaning                                                                    |
 | --------- | -------------------------------------------------------------------------- |
 | `0`       | Report printed. Invalid lines, if any, were skipped with a warning         |
-| `1`       | Invalid input with `--strict`                                              |
+| `1`       | Invalid input with `--strict`, or a `--company` that isn't in the input    |
 | `2`       | Bad options, unreadable file, or no input (e.g. run with nothing piped in) |
 
 ### Invalid input
@@ -94,6 +96,18 @@ Initech: No current relationship
 ```
 
 [`examples/edge-cases.txt`](./examples/edge-cases.txt) exercises the rules in the [edge-case table](#assumptions-and-edge-cases), and its expected output is in [`examples/edge-cases.expected.txt`](./examples/edge-cases.expected.txt).
+
+### Asking about specific companies
+
+`--company` answers the prompt's question "who is the person we know best at ACME?" directly, and `--details` shows the full ranking behind the answer:
+
+```console
+$ analyze-network --company Globex --details examples/input.txt
+Globex: Chris (2), Molly (1)
+
+$ analyze-network --company Globexx examples/input.txt
+error: company "Globexx" isn't in the input (did you mean "Globex"?)
+```
 
 ### JSON output
 

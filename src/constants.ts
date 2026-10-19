@@ -52,8 +52,8 @@ export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
 export const EXIT_CODES = {
   ok: 0,
-  /** Invalid input with --strict. */
-  invalidInput: 1,
+  /** The input can't answer the request: an invalid line with --strict, or a --company that isn't in it. */
+  inputProblem: 1,
   /** Bad flags, unreadable file, or no input at all. */
   usage: 2,
 } as const;

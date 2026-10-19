@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { rankRelationships, strongestPartner } from '../../src/core/analyze.ts';
+import {
+  rankRelationships,
+  selectCompanies,
+  strongestPartner,
+} from '../../src/core/analyze.ts';
 import { Network } from '../../src/core/network.ts';
 import { networkFrom } from '../helpers/network.ts';
 
@@ -98,5 +102,41 @@ describe('strongestPartner', () => {
 
   it('returns undefined when nobody has a relationship', () => {
     expect(strongestPartner({ company: 'ACME', partners: [] })).toBeUndefined();
+  });
+});
+
+describe('selectCompanies', () => {
+  const report = [
+    { company: 'ACME', partners: [] },
+    { company: 'Globex', partners: [{ partner: 'Chris', strength: 2 }] },
+    { company: 'Hooli', partners: [] },
+  ];
+
+  it('selects every company when none are requested', () => {
+    expect(selectCompanies(report, [])).toEqual({
+      selected: report,
+      missing: [],
+    });
+  });
+
+  it('keeps report order and drops duplicates', () => {
+    const { selected } = selectCompanies(report, ['Hooli', 'ACME', 'Hooli']);
+    expect(selected.map(({ company }) => company)).toEqual(['ACME', 'Hooli']);
+  });
+
+  it('reports missing names with a suggestion when one is close', () => {
+    expect(selectCompanies(report, ['Globexx', 'Initech', 'ACME'])).toEqual({
+      selected: [report[0]],
+      missing: [
+        { name: 'Globexx', suggestion: 'Globex' },
+        { name: 'Initech', suggestion: undefined },
+      ],
+    });
+  });
+
+  it('matches names exactly, suggesting the right case', () => {
+    expect(selectCompanies(report, ['acme']).missing).toEqual([
+      { name: 'acme', suggestion: 'ACME' },
+    ]);
   });
 });

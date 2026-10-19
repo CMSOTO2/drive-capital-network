@@ -9,7 +9,7 @@ The prompt says input is well formed and leaves error handling up to us. In prac
 
 ## Decision
 
-By default, an invalid line is skipped and reported on stderr with its line number and text. The rest of the file is still analyzed, and the report on stdout stays clean. `--strict` stops at the first invalid line with exit code 1 and no report, for pipelines that would rather fail. Usage and file errors always exit 2.
+By default, an invalid line is skipped and reported on stderr with its line number and text. The rest of the file is still analyzed, and the report on stdout stays clean. `--strict` stops at the first invalid line with exit code 1 and no report, for pipelines that would rather fail. Usage and file errors always exit 2. Exit 1 also covers a `--company` that isn't in the input, since in both cases the input can't answer the request.
 
 ## Consequences
 

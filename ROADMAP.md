@@ -57,8 +57,8 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] Hint when a `Contact` lists the partner before the employee
 - [x] Mark the offending word under the echoed line
 - [x] Point to a later declaration when a line refers to a name declared further down
-- [ ] `--company <name>` to report on specific companies
-- [ ] `--details` to show every partner's strength in text output
+- [x] `--company <name>` to report on specific companies, with a suggestion for unknown names
+- [x] `--details` to show every partner's strength in text output
 
 ## Later (not planned for the submission)
 

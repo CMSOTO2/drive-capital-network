@@ -125,6 +125,50 @@ describe('main', () => {
     });
   });
 
+  describe('--company and --details', () => {
+    it('reports only the requested companies', async () => {
+      expect(
+        await runCli(['-c', 'Hooli', '-c', 'ACME', 'examples/input.txt']),
+      ).toEqual({
+        code: 0,
+        stdout: 'ACME: No current relationship\nHooli: Molly (1)\n',
+        stderr: '',
+      });
+    });
+
+    it('errors on a company that is not in the input, suggesting a fix', async () => {
+      expect(
+        await runCli(['-c', 'Globexx', '-c', 'Hooli', 'examples/input.txt']),
+      ).toEqual({
+        code: 1,
+        stdout: 'Hooli: Molly (1)\n',
+        stderr:
+          'error: company "Globexx" isn\'t in the input (did you mean "Globex"?)\n',
+      });
+    });
+
+    it('lists every partner with --details', async () => {
+      expect((await runCli(['--details', 'examples/input.txt'])).stdout).toBe(
+        'ACME: No current relationship\nGlobex: Chris (2), Molly (1)\nHooli: Molly (1)\n',
+      );
+    });
+
+    it('filters JSON output too', async () => {
+      const { stdout } = await runCli([
+        '-f',
+        'json',
+        '-c',
+        'Globex',
+        'examples/input.txt',
+      ]);
+      expect(
+        (JSON.parse(stdout) as { company: string }[]).map(
+          ({ company }) => company,
+        ),
+      ).toEqual(['Globex']);
+    });
+  });
+
   describe('empty and unusual input', () => {
     it('prints nothing and adds a note for empty input', async () => {
       expect(await runCli([], { stdin: '' })).toEqual({

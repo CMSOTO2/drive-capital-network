@@ -22,8 +22,10 @@ or "${STDIN_ARG}". Prints every company, alphabetically, with the partner
 who has had the most contacts with its employees.
 
 Options
+  -c, --company <name>      Only report this company; repeat for more
+  -d, --details             List every partner's strength, not just the top
   -f, --format <${OUTPUT_FORMATS.join('|')}>  Output format (default: text)
-      --strict              Stop at the first invalid line and exit ${EXIT_CODES.invalidInput}
+      --strict              Stop at the first invalid line and exit ${EXIT_CODES.inputProblem}
   -q, --quiet               Don't print warnings about skipped lines
       --no-color            Plain warnings (NO_COLOR=1 works too)
   -h, --help                Show this help
@@ -34,11 +36,12 @@ ${commandUsage}
 
 Exit codes
   ${EXIT_CODES.ok}  Report printed; invalid lines, if any, were skipped with a warning
-  ${EXIT_CODES.invalidInput}  Invalid input with --strict
+  ${EXIT_CODES.inputProblem}  Invalid input with --strict, or a --company that isn't in the input
   ${EXIT_CODES.usage}  Bad options, unreadable file, or no input
 
 Examples
   ${PROGRAM_NAME} examples/input.txt
+  ${PROGRAM_NAME} --company Globex --details examples/input.txt
   cat examples/input.txt | ${PROGRAM_NAME} --format json
 `;
 

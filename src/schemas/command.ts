@@ -4,7 +4,8 @@ import { CONTACT_TYPES, NAME_PATTERN } from '../constants.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
 import { formatList } from '../utils/text.ts';
 
-const nameSchema = (label: string) =>
+/** A name made of letters only; `label` says what kind of name in errors. */
+export const nameSchema = (label: string) =>
   z.string().regex(NAME_PATTERN, {
     error: (issue) =>
       `${label} "${String(issue.input)}" must contain only letters A-Z or a-z`,
