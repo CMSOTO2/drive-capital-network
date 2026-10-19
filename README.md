@@ -20,6 +20,7 @@ Hooli: Molly (1)
 
 ## Contents
 
+- [Features](#features)
 - [Quick start](#quick-start)
 - [Usage](#usage)
 - [Development](#development)
@@ -31,6 +32,53 @@ Hooli: Molly (1)
 - [How I used LLMs](#how-i-used-llms)
 - [What was challenging](#what-was-challenging)
 - Further reading: [the prompt](./docs/prompt.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [ROADMAP.md](./ROADMAP.md), [decision records](./docs/decisions/), [CONTRIBUTING.md](./CONTRIBUTING.md), [CHANGELOG.md](./CHANGELOG.md)
+
+## Features
+
+**What the prompt asks for**
+
+- Reads `Partner`, `Company`, `Employee`, and `Contact` commands from a file or STDIN.
+- Prints every company alphabetically with its strongest partner, in exactly the prompt's format: `Globex: Chris (2)` or `ACME: No current relationship`.
+- Accepts only the `email`, `call`, and `coffee` contact types.
+- Streams the input line by line: a million contacts take about 2 seconds.
+
+**Asking questions**
+
+- `--company <name>` reports on specific companies (repeatable), and suggests the right name for a typo.
+- `--details` shows every partner's strength, not just the strongest.
+- `--format json` gives a machine-readable report with the full ranking.
+- `--stats` summarizes the input: lines read and skipped, partners, companies, employees, contacts by type, and skipped lines by reason. Text or JSON, counts only, never names.
+
+**Handling bad input**
+
+- Lenient by default: a bad line gets a warning, is skipped, and the rest of the report still prints. `--strict` stops at the first bad line instead.
+- Compiler-style warnings: the line number, the line itself, and `^` markers under the words at fault.
+- "Did you mean" hints for typos in keywords, contact types, declared names, `--company` names, options, and file names.
+- Recognizes a `Contact` with the employee and partner swapped, and shows the corrected line.
+- When a name is used before it's declared, points to the line that declares it.
+- Stays readable on huge or broken files: the first 20 warnings are shown and the rest counted, long lines and names are cut down, and a file where nothing parses gets "Is this the right file?"
+- Tolerates Windows and old Mac line endings, a byte order mark, tabs, extra spaces, a missing final newline, blank lines, and `#` comments.
+- Clear errors for a missing file, a directory, or a permission problem. With no input it explains how to give some instead of waiting on the keyboard, and it exits quietly when piped into `head`.
+
+**Output and accessibility**
+
+- The report goes to stdout and everything else to stderr, so the output is always safe to pipe.
+- Color only on a terminal, following `NO_COLOR`, `FORCE_COLOR`, and `--[no-]color`. Color is never the only signal, and information is never dimmed.
+- `--plain` says everything in words for screen readers, ASCII only; it turns on automatically with `TERM=dumb`.
+- `--quiet`, `--help`, `--version`, and documented exit codes: 0 success, 1 input problem, 2 usage or file error.
+
+**Running it**
+
+- `./analyze_network` runs the TypeScript source directly on Node 22.18+, with no build step.
+- `pnpm build` compiles to `dist/`, and `pnpm link --global` puts `analyze-network` on your `PATH`.
+
+**Quality**
+
+- Tests at every level: unit tests per module, the CLI in process and as a real child process, 31 example files with hand-worked expected output, the prompt's own example read straight from [`docs/prompt.md`](./docs/prompt.md), and differential stress tests against an independent reference model.
+- `pnpm -s stress` generates long, messy inputs along with the output they must produce.
+- TypeScript 7 in strict mode, Zod as the only runtime dependency, oxlint with warnings as errors, and oxfmt.
+- A pre-commit hook that lints, formats, and runs the tests; commitlint for Conventional Commits; and CI on Node 22.18 and 24.
+- Docs kept in sync with the code: [ARCHITECTURE.md](./ARCHITECTURE.md), [ROADMAP.md](./ROADMAP.md), eight [decision records](./docs/decisions/), [CONTRIBUTING.md](./CONTRIBUTING.md), [CHANGELOG.md](./CHANGELOG.md), and a pull request template.
 
 ## Quick start
 
