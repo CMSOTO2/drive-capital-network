@@ -7,7 +7,7 @@
 ```
 input (file or STDIN)
   → readline, one line at a time            cli.ts
-  → parseLine(line) → Command | ParseError  parse.ts
+  → parseLine(line) → ok | error | skip      parse.ts
   → network.apply(command) → warnings       network.ts
   → strongestRelationships(network)         analyze.ts
   → formatReport(results)                   format.ts
@@ -18,15 +18,15 @@ input (file or STDIN)
 
 ## Modules
 
-| File              | Responsibility                                                                                                                                                                            | Status      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `src/commands.ts` | `Command` discriminated union (`partner`, `company`, `employee`, `contact`) and `ContactType = "email" \| "call" \| "coffee"`                                                             | _(planned)_ |
-| `src/parse.ts`    | `parseLine(line)`: splits on whitespace, validates the command name, word count, `[A-Za-z]+` names, and the contact type. Returns a `Command`, a `ParseError`, or `null` for a blank line | _(planned)_ |
-| `src/network.ts`  | `Network` class: holds the declared entities and the relationship counts; `apply(command)` returns any warnings                                                                           | _(planned)_ |
-| `src/analyze.ts`  | `strongestRelationships(network)` → `CompanyRelationship[]`, sorted by company                                                                                                            | _(planned)_ |
-| `src/format.ts`   | `formatLine` / `formatReport`: produce the `<Company>: <Partner> (<n>)` and `No current relationship` lines                                                                               | _(planned)_ |
-| `src/run.ts`      | Wires parse → network → analyze → format; collects warnings with line numbers                                                                                                             | _(planned)_ |
-| `src/cli.ts`      | argv handling, file vs. STDIN, stdout/stderr, exit codes                                                                                                                                  | _(planned)_ |
+| File              | Responsibility                                                                                                                                                                                                                                                                  | Status      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/commands.ts` | Zod schemas for the four commands and `ContactType` (`email`, `call`, `coffee`). The `Command` union is inferred from them with `z.infer`, so the types and the runtime checks can't drift apart. `COMMAND_SYNTAX` maps each keyword to its fields and usage string             | done        |
+| `src/parse.ts`    | `parseLine(line)` → `{ status: 'ok', command }`, `{ status: 'error', message }`, or `{ status: 'skip' }` for blank and `#` comment lines. Checks the keyword and word count itself (so it can show the usage), then validates names and the contact type with Zod. Never throws | done        |
+| `src/network.ts`  | `Network` class: holds the declared entities and the relationship counts; `apply(command)` returns any warnings                                                                                                                                                                 | _(planned)_ |
+| `src/analyze.ts`  | `strongestRelationships(network)` → `CompanyRelationship[]`, sorted by company                                                                                                                                                                                                  | _(planned)_ |
+| `src/format.ts`   | `formatLine` / `formatReport`: produce the `<Company>: <Partner> (<n>)` and `No current relationship` lines                                                                                                                                                                     | _(planned)_ |
+| `src/run.ts`      | Wires parse → network → analyze → format; collects warnings with line numbers                                                                                                                                                                                                   | _(planned)_ |
+| `src/cli.ts`      | argv handling, file vs. STDIN, stdout/stderr, exit codes                                                                                                                                                                                                                        | _(planned)_ |
 
 ## Data model
 
@@ -44,6 +44,12 @@ A `Contact Laurie Chris email` looks up `employeeCompany.get("Laurie")` → `Glo
 - Analysis becomes one pass over the counts, with no join between contacts and employees.
 - Memory is O(companies × partners that contacted them) instead of O(contacts). Contacts are by far the largest part of a real network file.
 - **Cost:** the per-contact detail (which employee, which type) is gone once counted. That's fine for this question. Questions like "who at ACME do we know?" or weighted contact types would need a raw contact log next to the counts (see ROADMAP).
+
+## Validation
+
+Parsing happens in two steps. `parse.ts` first checks the structure: is the first word a known keyword, and is the word count right? Those errors need the usage string, which Zod doesn't know about. Then the words go through `CommandSchema`, a Zod discriminated union, which checks that names are letters only and that the contact type is one of the three allowed values. All issues on a line are reported together, not only the first one.
+
+Keywords and contact types are case-sensitive, as the prompt writes them. A near miss such as `partner` or `Coffee` is still rejected, but the warning suggests the correct spelling.
 
 ## Rules
 
@@ -73,6 +79,7 @@ With L lines, C companies, and P partner/company pairs that have at least one co
 ## Tooling
 
 - **TypeScript 7** (`tsconfig.json`): the `@tsconfig/node24` base (ES2024, `nodenext`) plus the Total TypeScript strictness set: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`. `erasableSyntaxOnly` keeps `node src/cli.ts` working through Node's type stripping, so no enums or namespaces, and imports use `.ts` extensions that `tsc` rewrites to `.js`.
+- **Zod 4** validates parsed commands. It's the only runtime dependency. Zod's error messages are customized so a bad line reads as plain English, e.g. `contact type "Coffee" is not valid (did you mean "coffee"?)`.
 - **Vitest** for unit tests in `test/`.
 - **oxlint** (`.oxlintrc.json`): `correctness` rules are errors; `suspicious` and `perf` are warnings. Plugins: eslint, typescript, unicorn, oxc, import, node, promise, vitest. Extra rules: `eqeqeq`, `consistent-type-imports`, `no-explicit-any`, `prefer-node-protocol`, `import/no-cycle`, and no focused tests. `pnpm lint` runs with `--deny-warnings`, so any warning fails `pnpm check`. Type-aware rules such as `no-floating-promises` would need `oxlint-tsgolint`, which isn't installed.
 - **oxfmt** (`.oxfmtrc.json`): Prettier-compatible settings at an 80-column width, LF line endings, sorted imports, and sorted `package.json`.

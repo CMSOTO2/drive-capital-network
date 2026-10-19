@@ -49,26 +49,30 @@ Relationship strength is counted while the input is read rather than afterwards.
 - **TypeScript on Node 24.** It's the language I'm most fluent in. `tsc` builds to `dist/`, and `pnpm dev` runs the source directly through Node's built-in type stripping.
 - **File or STDIN.** A file path argument is read from disk. With no argument (or `-`), input comes from STDIN.
 - **Lenient on bad input, but loud about it.** The prompt says input is well formed. I still treat this as a product: a bad line prints a warning with its line number to stderr and is skipped, and the report on stdout stays clean so it can be piped.
+- **Zod at the input boundary.** Command shapes are defined once as Zod schemas, and the TypeScript types are inferred from them. Every line is validated before it reaches the network model, so the model can trust its input.
 - **Deterministic output.** Ties and sort order follow fixed rules (below), so the same input always gives the same output.
 
 ## Assumptions and edge cases
 
-| Case                                                          | Behavior                                                                                                  |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Two partners tie for strongest                                | The alphabetically first partner wins. The prompt doesn't say; I picked a deterministic rule.             |
-| Company sort order                                            | Case-insensitive alphabetical, with an ordinal tiebreak. Matches the example (`ACME`, `Globex`, `Hooli`). |
-| Contact type other than `email`, `call`, `coffee`             | Rejected with a warning ("should only accept" those three).                                               |
-| Contact type weighting                                        | None. Every contact counts as 1, since strength is the "total amount of Contacts".                        |
-| Contact names an undeclared employee or partner               | Warning, line skipped. Commands are processed in order.                                                   |
-| Employee names an undeclared company                          | Warning, line skipped. The prompt says this won't happen; the check is cheap.                             |
-| Same partner or company declared twice                        | Ignored, no warning.                                                                                      |
-| Employee declared again at a different company                | Warning, first declaration kept (employee names are globally unique).                                     |
-| Identical `Contact` lines repeated                            | Each one counts. They're separate interactions.                                                           |
-| Blank lines, Windows line endings, extra spaces               | Tolerated.                                                                                                |
-| Unknown command, wrong number of words, non-letter characters | Warning, line skipped.                                                                                    |
-| Partner with no contacts                                      | Never appears in the output.                                                                              |
-| No companies declared                                         | Empty output.                                                                                             |
-| A partner and an employee share a name                        | Allowed. Partners and employees are separate namespaces.                                                  |
+| Case                                                              | Behavior                                                                                                                         |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Two partners tie for strongest                                    | The alphabetically first partner wins. The prompt doesn't say; I picked a deterministic rule.                                    |
+| Company sort order                                                | Case-insensitive alphabetical, with an ordinal tiebreak. Matches the example (`ACME`, `Globex`, `Hooli`).                        |
+| Contact type other than `email`, `call`, `coffee`                 | Rejected with a warning ("should only accept" those three).                                                                      |
+| Contact type weighting                                            | None. Every contact counts as 1, since strength is the "total amount of Contacts".                                               |
+| Contact names an undeclared employee or partner                   | Warning, line skipped. Commands are processed in order.                                                                          |
+| Employee names an undeclared company                              | Warning, line skipped. The prompt says this won't happen; the check is cheap.                                                    |
+| Same partner or company declared twice                            | Ignored, no warning.                                                                                                             |
+| Employee declared again at a different company                    | Warning, first declaration kept (employee names are globally unique).                                                            |
+| Identical `Contact` lines repeated                                | Each one counts. They're separate interactions.                                                                                  |
+| Blank lines, Windows line endings, extra spaces                   | Tolerated.                                                                                                                       |
+| Lines starting with `#`                                           | Skipped as comments. The prompt says real input won't have them, but its example does, so pasting the example as-is still works. |
+| UTF-8 byte order mark at the start of the file                    | Stripped. Some Windows editors add one.                                                                                          |
+| Keyword or contact type with the wrong case (`partner`, `Coffee`) | Rejected, since the prompt defines exact words, but the warning suggests the right spelling.                                     |
+| Unknown command, wrong number of words, non-letter characters     | Warning, line skipped.                                                                                                           |
+| Partner with no contacts                                          | Never appears in the output.                                                                                                     |
+| No companies declared                                             | Empty output.                                                                                                                    |
+| A partner and an employee share a name                            | Allowed. Partners and employees are separate namespaces.                                                                         |
 
 ## How I used LLMs
 

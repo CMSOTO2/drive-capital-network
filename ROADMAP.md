@@ -16,9 +16,9 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 ## Phase 1: Parsing (`feat:`)
 
-- [ ] `src/commands.ts`: `Command` union and `ContactType`
-- [ ] `src/parse.ts`: `parseLine`
-- [ ] Tests: each command type, invalid contact type, wrong word count, unknown command, non-letter names, blank lines, CRLF, extra whitespace
+- [x] `src/commands.ts`: Zod schemas, inferred `Command` union and `ContactType`
+- [x] `src/parse.ts`: `parseLine`
+- [x] Tests: each command type, invalid contact type, wrong word count, unknown command, non-letter names, blank lines, CRLF, extra whitespace, `#` comments, byte order mark, case-mismatch hints
 
 ## Phase 2: Network model (`feat:`)
 
