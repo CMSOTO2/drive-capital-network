@@ -1,5 +1,5 @@
 import { SUGGESTION_EDIT_LIMITS, SUGGESTION_MAX_EDITS } from '../constants.ts';
-import { compareNames } from './text.ts';
+import { compareNames, quote } from './text.ts';
 
 /**
  * Counts the edits needed to turn `a` into `b`. Each of these is one edit:
@@ -95,5 +95,7 @@ export function suggest(
 
 /** ` (did you mean "X"?)`, or an empty string when there's no suggestion. */
 export function didYouMean(suggestion: string | undefined): string {
-  return suggestion === undefined ? '' : ` (did you mean "${suggestion}"?)`;
+  return suggestion === undefined
+    ? ''
+    : ` (did you mean ${quote(suggestion)}?)`;
 }

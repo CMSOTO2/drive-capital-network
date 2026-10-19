@@ -198,6 +198,33 @@ describe('main', () => {
     });
   });
 
+  describe('on a terminal', () => {
+    const onTerminal = { outputIsTTY: true, env: { NO_COLOR: '1' } };
+
+    it('puts a blank line between the warnings and the report', async () => {
+      const { stdout, stderr } = await runCli(
+        ['examples/edge-cases.txt'],
+        onTerminal,
+      );
+      expect(stderr).toMatch(/use --strict to fail instead\n\n$/);
+      expect(stdout).toBe(
+        await readFile('examples/edge-cases.expected.txt', 'utf8'),
+      );
+    });
+
+    it('adds no blank line when there is nothing on stderr', async () => {
+      expect((await runCli(['examples/input.txt'], onTerminal)).stderr).toBe(
+        '',
+      );
+    });
+
+    it('adds no blank line when the output is redirected', async () => {
+      const { stderr } = await runCli(['examples/edge-cases.txt']);
+      expect(stderr).toMatch(/use --strict to fail instead\n$/);
+      expect(stderr).not.toMatch(/\n\n$/);
+    });
+  });
+
   describe('--stats', () => {
     it('prints a summary on stderr and leaves stdout unchanged', async () => {
       const { code, stdout, stderr } = await runCli([
@@ -222,7 +249,7 @@ describe('main', () => {
     it('still prints stats with --quiet', async () => {
       const { stderr } = await runCli(['-q', '-s', 'examples/edge-cases.txt']);
       expect(stderr).not.toContain('warning:');
-      expect(stderr).toContain('skipped lines: 4 undeclared name');
+      expect(stderr).toContain('skipped lines: 11\n    undeclared name: 4\n');
     });
   });
 
@@ -292,6 +319,24 @@ describe('main', () => {
       });
     });
 
+    it('suggests a file with a similar name', async () => {
+      expect((await runCli(['examples/inptu.txt'])).stderr).toBe(
+        'error: cannot read "examples/inptu.txt": no such file (did you mean "examples/input.txt"?)\n',
+      );
+    });
+
+    it('suggests the file when the extension is missing', async () => {
+      expect((await runCli(['examples/edge-cases'])).stderr).toContain(
+        '(did you mean "examples/edge-cases.txt"?)',
+      );
+    });
+
+    it('gives no file hint when the directory is missing too', async () => {
+      expect((await runCli(['nowhere/input.txt'])).stderr).toBe(
+        'error: cannot read "nowhere/input.txt": no such file\n',
+      );
+    });
+
     it('reports a directory', async () => {
       expect((await runCli([directory])).stderr).toBe(
         `error: cannot read "${directory}": it is a directory\n`,
@@ -311,6 +356,12 @@ describe('main', () => {
         );
       },
     );
+
+    it('suggests the option that was probably meant', async () => {
+      expect((await runCli(['--detail', 'examples/input.txt'])).stderr).toBe(
+        'error: unknown option "--detail" (did you mean "--details"?)\nRun "analyze-network --help" for usage.\n',
+      );
+    });
 
     it('reports an unknown option with a pointer to --help', async () => {
       expect(await runCli(['--verbose'])).toEqual({

@@ -84,6 +84,19 @@ describe('parseCliArgs', () => {
     expect(errorOf(['--verbose'])).toBe('unknown option "--verbose"');
   });
 
+  it.each([
+    ['--detail', '--details'],
+    ['--colour', '--color'],
+    ['--no-colour', '--no-color'],
+    ['--Strict', '--strict'],
+    ['--compnay', '--company'],
+    ['-H', '-h'],
+  ])('suggests %s → %s', (typed, meant) => {
+    expect(errorOf([typed, 'x'])).toBe(
+      `unknown option "${typed}" (did you mean "${meant}"?)`,
+    );
+  });
+
   it('rejects an unsupported format', () => {
     expect(errorOf(['--format', 'xml'])).toBe(
       '--format must be text or json, got "xml"',

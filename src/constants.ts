@@ -61,6 +61,22 @@ export const EXIT_CODES = {
 /** Warnings shown before the rest are summarized as "…and N more". */
 export const MAX_PRINTED_DIAGNOSTICS = 20;
 
+/**
+ * The widest slice of an input line a warning shows. Longer lines are cut
+ * around the words at fault, so one huge line can't flood the terminal.
+ */
+export const MAX_EXCERPT_WIDTH = 100;
+
+/** How much of a cut line to keep before the first word at fault. */
+export const EXCERPT_LEAD = 20;
+
+/** Names longer than this are shortened when quoted in a message. */
+export const MAX_QUOTED_LENGTH = 40;
+
+/** How much of a shortened name to keep from its start and its end. */
+export const QUOTED_HEAD_LENGTH = 20;
+export const QUOTED_TAIL_LENGTH = 10;
+
 /** Argument meaning "read from STDIN", as in `cat file | analyze-network -`. */
 export const STDIN_ARG = '-';
 

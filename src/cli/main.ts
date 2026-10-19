@@ -1,5 +1,6 @@
 import { createReadStream, readFileSync } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
+import { basename, dirname, parse } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 
 import { z } from 'zod';
@@ -9,7 +10,8 @@ import { selectCompanies } from '../core/analyze.ts';
 import { formatJsonReport, formatTextReport } from '../core/format.ts';
 import { analyzeLines, type PipelineResult } from '../core/pipeline.ts';
 import { summarize } from '../core/stats.ts';
-import { didYouMean } from '../utils/suggest.ts';
+import { didYouMean, suggest } from '../utils/suggest.ts';
+import { quote } from '../utils/text.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
 import { readLines } from './lines.ts';
@@ -26,7 +28,7 @@ import {
 export interface CliIo {
   argv: readonly string[];
   stdin: Readable & { isTTY?: boolean };
-  stdout: Writable;
+  stdout: Writable & { isTTY?: boolean };
   stderr: Writable & { isTTY?: boolean };
   env: Record<string, string | undefined>;
 }
@@ -48,6 +50,28 @@ function describeFsError(error: unknown): string {
   }
 }
 
+/**
+ * A file next to `path` that was probably meant: the same name with an
+ * extension (`input` → `input.txt`), or a close spelling (`inptu.txt`).
+ * Keeps the directory as the user typed it.
+ */
+async function suggestFile(path: string): Promise<string | undefined> {
+  let names: string[];
+  try {
+    const entries = await readdir(dirname(path), { withFileTypes: true });
+    names = entries.filter((entry) => entry.isFile()).map(({ name }) => name);
+  } catch {
+    return undefined;
+  }
+
+  const typed = basename(path);
+  const match =
+    names.find((name) => parse(name).name === typed) ?? suggest(typed, names);
+  return match === undefined
+    ? undefined
+    : path.slice(0, path.length - typed.length) + match;
+}
+
 /** Fails fast with a clear message before any line is read. */
 async function openFile(path: string): Promise<Readable> {
   const cannotRead = (reason: string) =>
@@ -57,7 +81,11 @@ async function openFile(path: string): Promise<Readable> {
   try {
     isDirectory = (await stat(path)).isDirectory();
   } catch (error) {
-    throw cannotRead(describeFsError(error));
+    const hint =
+      (error as NodeJS.ErrnoException).code === 'ENOENT'
+        ? didYouMean(await suggestFile(path))
+        : '';
+    throw cannotRead(describeFsError(error) + hint);
   }
   if (isDirectory) throw cannotRead('it is a directory');
 
@@ -132,29 +160,40 @@ export async function main(io: CliIo): Promise<number> {
     throw error;
   }
 
+  // Everything about the input goes to stderr, before the report.
+  let notices = '';
   if (!options.quiet || result.aborted) {
-    io.stderr.write(renderDiagnostics(result, palette, layout));
+    notices += renderDiagnostics(result, palette, layout, {
+      statsShown: options.stats,
+    });
   }
   if (options.stats) {
     const stats = summarize(result);
-    io.stderr.write(
+    notices +=
       options.format === 'json'
         ? `${JSON.stringify(stats, null, 2)}\n`
-        : renderStats(stats, palette),
-    );
+        : renderStats(stats, palette);
   }
-  if (result.aborted) return EXIT_CODES.inputProblem;
+  if (result.aborted) {
+    io.stderr.write(notices);
+    return EXIT_CODES.inputProblem;
+  }
 
   const { selected, missing } = selectCompanies(result.report, options.company);
   for (const { name, suggestion } of missing) {
-    io.stderr.write(
-      renderMessage(
-        'error',
-        `company "${name}" isn't in the input${didYouMean(suggestion)}`,
-        palette,
-      ),
+    notices += renderMessage(
+      'error',
+      `company ${quote(name)} isn't in the input${didYouMean(suggestion)}`,
+      palette,
     );
   }
+
+  // On a terminal, stderr and stdout land on the same screen; a blank line
+  // keeps the last warning from running into the report. Only on stderr, so
+  // piped or redirected output is unchanged.
+  const sharesScreen = io.stderr.isTTY === true && io.stdout.isTTY === true;
+  if (notices !== '' && sharesScreen && selected.length > 0) notices += '\n';
+  io.stderr.write(notices);
 
   io.stdout.write(
     options.format === 'json'

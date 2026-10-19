@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createPalette,
+  excerpt,
   renderDiagnostic,
   renderDiagnostics,
   chooseOutputStyle,
@@ -12,7 +13,11 @@ import {
   underlineWords,
   wordsAt,
 } from '../../src/cli/render.ts';
-import { MAX_PRINTED_DIAGNOSTICS } from '../../src/constants.ts';
+import {
+  EXCERPT_LEAD,
+  MAX_EXCERPT_WIDTH,
+  MAX_PRINTED_DIAGNOSTICS,
+} from '../../src/constants.ts';
 import type { Diagnostic, PipelineResult } from '../../src/core/pipeline.ts';
 
 const plain = createPalette(false);
@@ -124,6 +129,29 @@ describe('renderDiagnostic', () => {
   });
 });
 
+describe('renderDiagnostic with a long line', () => {
+  const long = {
+    ...diagnostic,
+    text: `Contact Laurie Chris text ${'x '.repeat(200)}`,
+  };
+
+  it('cuts the line and keeps the markers under the word', () => {
+    const output = renderDiagnostic(long, 'warning', plain);
+    const [, shown = '', markers = ''] = output.split('\n');
+    expect(shown.length).toBeLessThan(MAX_EXCERPT_WIDTH + 10);
+    expect(shown.endsWith('…')).toBe(true);
+    expect(markers).toBe('    |                      ^^^^');
+  });
+
+  it('cuts with ASCII dots in the plain layout', () => {
+    const output = renderDiagnostic(long, 'warning', plain, 'plain');
+    expect(output).toMatch(
+      /line 3 reads: Contact Laurie Chris text x .*x \.\.\.\n/,
+    );
+    expect(output).toContain('word at fault: "text"');
+  });
+});
+
 describe('renderDiagnostics', () => {
   it('prints nothing for clean input', () => {
     expect(renderDiagnostics(resultWith({}), plain)).toBe('');
@@ -150,7 +178,9 @@ describe('renderDiagnostics', () => {
       plain,
     );
     expect(output.match(/^warning:/gm)).toHaveLength(MAX_PRINTED_DIAGNOSTICS);
-    expect(output).toContain('\n…and 1,205 more warnings\n');
+    expect(output).toContain(
+      '\n…and 1,205 more warnings (add --stats to count them by reason)\n',
+    );
     expect(output).toContain(
       `skipped ${(MAX_PRINTED_DIAGNOSTICS + 1205).toLocaleString('en-US')} invalid lines`,
     );
@@ -159,10 +189,20 @@ describe('renderDiagnostics', () => {
   it('never dims the "more warnings" line, and uses ASCII when plain', () => {
     const result = manySkipped(MAX_PRINTED_DIAGNOSTICS + 1);
     const colored = renderDiagnostics(result, createPalette(true));
-    expect(colored).toMatch(/\n…and 1 more warning\n/);
+    expect(colored).toMatch(/\n…and 1 more warning \(/);
     expect(renderDiagnostics(result, plain, 'plain')).toContain(
-      '\n...and 1 more warning\n',
+      '\n...and 1 more warning (',
     );
+  });
+
+  it('leaves out the --stats pointer when the stats are already shown', () => {
+    const output = renderDiagnostics(
+      manySkipped(MAX_PRINTED_DIAGNOSTICS + 1),
+      plain,
+      'rich',
+      { statsShown: true },
+    );
+    expect(output).toContain('\n…and 1 more warning\n');
   });
 
   it('asks whether it is the right file when nothing was valid', () => {
@@ -263,7 +303,7 @@ describe('underlineWords', () => {
 });
 
 describe('renderStats', () => {
-  it('prints one labelled line per topic', () => {
+  it('prints one labelled line per topic, and a row per skip reason', () => {
     expect(
       renderStats(
         {
@@ -290,7 +330,9 @@ describe('renderStats', () => {
         '  companies: 5 (4 with a relationship, 1 without)',
         '  employees: 20',
         '  contacts: 1,050 (1,000 email, 30 call, 20 coffee)',
-        '  skipped lines: 50 undeclared name, 10 invalid name',
+        '  skipped lines: 60',
+        '    undeclared name: 50',
+        '    invalid name: 10',
         '',
       ].join('\n'),
     );
@@ -309,6 +351,50 @@ describe('renderStats', () => {
       plain,
     );
     expect(output).toContain('  skipped lines: none\n');
+  });
+});
+
+describe('excerpt', () => {
+  const filler = 'x '.repeat(60);
+
+  it('leaves a line that fits alone', () => {
+    expect(excerpt('Contact Laurie Chris text', [3], '…')).toEqual({
+      text: 'Contact Laurie Chris text',
+      underline: '                     ^^^^',
+    });
+  });
+
+  it('cuts a long line at the end, keeping the start in view', () => {
+    const shown = excerpt(`Partner Chris2 ${filler}`, [1], '…');
+    expect(shown.text).toHaveLength(MAX_EXCERPT_WIDTH + 1);
+    expect(shown.text).toMatch(/^Partner Chris2 x .*…$/);
+    expect(shown.underline).toBe('        ^^^^^^');
+  });
+
+  it('moves the window to the word at fault, with a little lead', () => {
+    const line = `${filler}Partner Chris2 ${filler}`;
+    const shown = excerpt(line, [61], '…');
+    expect(shown.text).toHaveLength(MAX_EXCERPT_WIDTH + 2);
+    expect(shown.text.startsWith('…')).toBe(true);
+    expect(shown.text.endsWith('…')).toBe(true);
+    const marker = shown.underline.indexOf('^');
+    expect(shown.text.slice(marker, marker + 6)).toBe('Chris2');
+    expect(marker).toBe(EXCERPT_LEAD + 1);
+  });
+
+  it('shows the end of a line whose word at fault is near the end', () => {
+    const shown = excerpt(`${filler}Partner Chris2`, [61], '...');
+    expect(shown.text).toMatch(/^\.\.\.x .*Partner Chris2$/);
+    const marker = shown.underline.indexOf('^');
+    expect(shown.text.slice(marker)).toBe('Chris2');
+  });
+
+  it('cuts a single huge word too', () => {
+    const shown = excerpt(`Partner Long${'A'.repeat(5000)}1`, [1], '…');
+    expect(shown.text).toHaveLength(MAX_EXCERPT_WIDTH + 1);
+    expect(shown.underline).toBe(
+      `        ${'^'.repeat(MAX_EXCERPT_WIDTH - 8)}`,
+    );
   });
 });
 

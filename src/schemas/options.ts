@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { OUTPUT_FORMATS } from '../constants.ts';
-import { formatList } from '../utils/text.ts';
+import { formatList, quote } from '../utils/text.ts';
 import { nameSchema } from './command.ts';
 
 /** Validated command-line options, after argv has been tokenized. */
@@ -15,7 +15,7 @@ export const CliOptionsSchema = z.object({
   format: z
     .enum(OUTPUT_FORMATS, {
       error: (issue) =>
-        `--format must be ${formatList(OUTPUT_FORMATS)}, got "${String(issue.input)}"`,
+        `--format must be ${formatList(OUTPUT_FORMATS)}, got ${quote(String(issue.input))}`,
     })
     .default('text'),
   /** Companies to report on; empty means all of them. */

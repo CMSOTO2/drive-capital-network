@@ -1,8 +1,13 @@
 import { styleText } from 'node:util';
 
-import { MAX_PRINTED_DIAGNOSTICS } from '../constants.ts';
+import {
+  EXCERPT_LEAD,
+  MAX_EXCERPT_WIDTH,
+  MAX_PRINTED_DIAGNOSTICS,
+} from '../constants.ts';
 import type { Diagnostic, PipelineResult } from '../core/pipeline.ts';
 import type { RunStats } from '../core/stats.ts';
+import { formatCount, quote } from '../utils/text.ts';
 
 type Style = Parameters<typeof styleText>[0];
 
@@ -59,9 +64,6 @@ export function chooseOutputStyle({
   return { layout, color: shouldUseColor({ flag, isTTY, env }) };
 }
 
-/** `1,234`: thousands separators make big counts easier to read. */
-const formatCount = (count: number): string => count.toLocaleString('en-US');
-
 const plural = (count: number, word: string): string =>
   `${formatCount(count)} ${word}${count === 1 ? '' : 's'}`;
 
@@ -114,6 +116,47 @@ export function underlineWords(text: string, words: readonly number[]): string {
   return underline;
 }
 
+/**
+ * The part of a line a warning shows, with its `^` row to match. A line
+ * longer than MAX_EXCERPT_WIDTH is cut to that width. The cut keeps the
+ * start of the line when the first word at fault fits there, and otherwise
+ * starts a little before that word; `ellipsis` marks each cut end:
+ *
+ *   …x x x x Partner Chris2 x x x x…
+ *                    ^^^^^^
+ */
+export function excerpt(
+  text: string,
+  words: readonly number[],
+  ellipsis: string,
+): { text: string; underline: string } {
+  const underline = underlineWords(text, words);
+  if (text.length <= MAX_EXCERPT_WIDTH) return { text, underline };
+
+  // Start at the beginning of the line when the first word at fault fits
+  // there; otherwise start a little before that word.
+  const [firstWord] = uniqueSorted(words);
+  const focus =
+    firstWord === undefined ? undefined : wordSpans(text)[firstWord];
+  const fitsAtStart = focus === undefined || focus.end <= MAX_EXCERPT_WIDTH;
+  const start = fitsAtStart
+    ? 0
+    : Math.max(
+        0,
+        Math.min(focus.start - EXCERPT_LEAD, text.length - MAX_EXCERPT_WIDTH),
+      );
+  const end = start + MAX_EXCERPT_WIDTH;
+
+  const cutBefore = start > 0 ? ellipsis : '';
+  const cutAfter = end < text.length ? ellipsis : '';
+  return {
+    text: cutBefore + text.slice(start, end) + cutAfter,
+    underline: (
+      ' '.repeat(cutBefore.length) + underline.slice(start, end)
+    ).trimEnd(),
+  };
+}
+
 /** The text of the given words, e.g. `["Chris", "Sarah"]`. */
 export function wordsAt(text: string, words: readonly number[]): string[] {
   const allWords = text.match(/\S+/g) ?? [];
@@ -144,7 +187,11 @@ export function renderDiagnostic(
   layout: Layout = 'rich',
 ): string {
   const lineNumber = String(diagnostic.line);
-  const shownText = diagnostic.text.replaceAll('\t', ' ');
+  const shown = excerpt(
+    diagnostic.text.replaceAll('\t', ' '),
+    diagnostic.words,
+    layout === 'plain' ? '...' : '…',
+  );
   let output = renderMessage(
     severity,
     `line ${lineNumber}: ${diagnostic.message}`,
@@ -152,11 +199,11 @@ export function renderDiagnostic(
   );
 
   if (layout === 'plain') {
-    output += `  line ${lineNumber} reads: ${shownText}\n`;
-    const atFault = wordsAt(shownText, diagnostic.words);
+    output += `  line ${lineNumber} reads: ${shown.text}\n`;
+    const atFault = wordsAt(diagnostic.text, diagnostic.words);
     if (atFault.length > 0) {
       const label = atFault.length === 1 ? 'word at fault' : 'words at fault';
-      const quoted = atFault.map((word) => `"${word}"`).join(', ');
+      const quoted = atFault.map((word) => quote(word)).join(', ');
       output += `  ${label}: ${quoted}\n`;
     }
     for (const note of diagnostic.notes) {
@@ -166,11 +213,10 @@ export function renderDiagnostic(
   }
 
   const blankGutter = ' '.repeat(lineNumber.length);
-  output += `${palette.paint('dim', `  ${lineNumber} | `)}${shownText}\n`;
+  output += `${palette.paint('dim', `  ${lineNumber} | `)}${shown.text}\n`;
 
-  const underline = underlineWords(shownText, diagnostic.words);
-  if (underline !== '') {
-    const marker = palette.paint(SEVERITY_COLORS[severity], underline);
+  if (shown.underline !== '') {
+    const marker = palette.paint(SEVERITY_COLORS[severity], shown.underline);
     output += `${palette.paint('dim', `  ${blankGutter} | `)}${marker}\n`;
   }
 
@@ -180,11 +226,17 @@ export function renderDiagnostic(
   return output;
 }
 
+export interface DiagnosticsOptions {
+  /** Whether --stats is on; if not, a cut-off list of warnings points to it. */
+  statsShown?: boolean;
+}
+
 /** Everything the CLI writes to stderr about the input itself. */
 export function renderDiagnostics(
   result: PipelineResult,
   palette: Palette,
   layout: Layout = 'rich',
+  { statsShown = false }: DiagnosticsOptions = {},
 ): string {
   const { diagnostics, skippedCount, aborted, commandCount, report } = result;
 
@@ -223,7 +275,10 @@ export function renderDiagnostics(
     // Not dimmed: it's information, and dim text is hard to read on many
     // terminal themes. Plain layout sticks to ASCII.
     const ellipsis = layout === 'plain' ? '...' : '…';
-    output += `${ellipsis}and ${plural(hidden, 'more warning')}\n`;
+    const breakdown = statsShown
+      ? ''
+      : ' (add --stats to count them by reason)';
+    output += `${ellipsis}and ${plural(hidden, 'more warning')}${breakdown}\n`;
   }
 
   output += renderMessage(
@@ -248,6 +303,11 @@ export function renderDiagnostics(
  *     lines: 28 read, 14 commands, 11 skipped, 3 blank or comments
  *     companies: 4 (2 with a relationship, 2 without)
  *     contacts: 4 (1 email, 1 call, 2 coffee)
+ *     skipped lines: 11
+ *       undeclared name: 4
+ *       unknown command: 2
+ *
+ * Skipped lines get a row per reason, so the summary doesn't wrap.
  */
 export function renderStats(stats: RunStats, palette: Palette): string {
   const { lines, companies, contacts } = stats;
@@ -255,12 +315,9 @@ export function renderStats(stats: RunStats, palette: Palette): string {
   const contactTypes = Object.entries(contacts.byType)
     .map(([type, count]) => `${formatCount(count)} ${type}`)
     .join(', ');
-  const skipped =
-    stats.skipped.length === 0
-      ? 'none'
-      : stats.skipped
-          .map(({ label, count }) => `${formatCount(count)} ${label}`)
-          .join(', ');
+  const skippedRows = stats.skipped.map(
+    ({ label, count }) => `  ${label}: ${formatCount(count)}`,
+  );
 
   const rows = [
     `lines: ${formatCount(lines.read)} read, ${formatCount(lines.commands)} commands, ${formatCount(lines.skipped)} skipped, ${formatCount(lines.ignored)} blank or comments`,
@@ -268,7 +325,8 @@ export function renderStats(stats: RunStats, palette: Palette): string {
     `companies: ${formatCount(companies.total)} (${formatCount(companies.withRelationship)} with a relationship, ${formatCount(companies.withoutRelationship)} without)`,
     `employees: ${formatCount(stats.employees)}`,
     `contacts: ${formatCount(contacts.total)} (${contactTypes})`,
-    `skipped lines: ${skipped}`,
+    `skipped lines: ${skippedRows.length === 0 ? 'none' : formatCount(lines.skipped)}`,
+    ...skippedRows,
   ];
   return `${palette.paint('bold', 'stats:')}\n${rows.map((row) => `  ${row}\n`).join('')}`;
 }

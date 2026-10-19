@@ -2,6 +2,8 @@ import { parseArgs } from 'node:util';
 
 import { STDIN_ARG } from '../constants.ts';
 import { CliOptionsSchema, type CliOptions } from '../schemas/options.ts';
+import { didYouMean, suggest } from '../utils/suggest.ts';
+import { quote } from '../utils/text.ts';
 
 export type ArgsResult =
   | { ok: true; options: CliOptions }
@@ -20,16 +22,24 @@ const OPTIONS = {
   plain: { type: 'boolean' },
 } as const;
 
+/** Every spelling an option can take, for "did you mean" hints. */
+const OPTION_SPELLINGS: string[] = [];
+for (const [name, option] of Object.entries(OPTIONS)) {
+  OPTION_SPELLINGS.push(`--${name}`);
+  if (option.type === 'boolean') OPTION_SPELLINGS.push(`--no-${name}`);
+  if ('short' in option) OPTION_SPELLINGS.push(`-${option.short}`);
+}
+
 /** Node's parseArgs messages are long; keep the part a user needs. */
 function describeParseError(error: unknown): string {
   if (!(error instanceof Error)) return String(error);
   const code = (error as NodeJS.ErrnoException).code;
   const quoted = /'([^']+)'/.exec(error.message)?.[1];
   if (code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION' && quoted) {
-    return `unknown option "${quoted}"`;
+    return `unknown option ${quote(quoted)}${didYouMean(suggest(quoted, OPTION_SPELLINGS))}`;
   }
   if (code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE' && quoted) {
-    return `option "${quoted}" needs a value`;
+    return `option ${quote(quoted)} needs a value`;
   }
   return error.message;
 }

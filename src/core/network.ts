@@ -12,6 +12,7 @@ import type {
   PartnerCommand,
 } from '../schemas/command.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
+import { quote } from '../utils/text.ts';
 
 /** A name of a partner, company, or employee that a command refers to. */
 export interface NameReference {
@@ -124,7 +125,7 @@ export class Network {
         ? didYouMean(suggest(company, this.#companies))
         : '';
       return {
-        message: `employee "${name}" works at company "${company}", which hasn't been declared${hint}`,
+        message: `employee ${quote(name)} works at company ${quote(company)}, which hasn't been declared${hint}`,
         reason: 'undeclaredName',
         fields: ['company'],
         undeclared: [{ kind: 'company', name: company }],
@@ -134,7 +135,7 @@ export class Network {
     const currentCompany = this.#employeeCompany.get(name);
     if (currentCompany !== undefined && currentCompany !== company) {
       return {
-        message: `employee "${name}" is already declared at "${currentCompany}"; employee names are unique, so "${company}" is ignored`,
+        message: `employee ${quote(name)} is already declared at ${quote(currentCompany)}; employee names are unique, so ${quote(company)} is ignored`,
         reason: 'employeeRedeclared',
         fields: ['company'],
         undeclared: [],
@@ -163,7 +164,7 @@ export class Network {
       this.#partners.has(employee) && this.#employeeCompany.has(partner);
     if (namesAreSwapped) {
       return {
-        message: `contact skipped: "${employee}" is a partner and "${partner}" is an employee; the order is Contact ${partner} ${employee} ${type}`,
+        message: `contact skipped: ${quote(employee)} is a partner and ${quote(partner)} is an employee; the order is Contact ${partner} ${employee} ${type}`,
         reason: 'swappedArguments',
         fields: ['employee', 'partner'],
         undeclared: [],
@@ -178,7 +179,7 @@ export class Network {
       const hint = suggestNames
         ? didYouMean(suggest(employee, this.#employeeCompany.keys()))
         : '';
-      reasons.push(`employee "${employee}" hasn't been declared${hint}`);
+      reasons.push(`employee ${quote(employee)} hasn't been declared${hint}`);
       fields.push('employee');
       undeclared.push({ kind: 'employee', name: employee });
     }
@@ -186,7 +187,7 @@ export class Network {
       const hint = suggestNames
         ? didYouMean(suggest(partner, this.#partners))
         : '';
-      reasons.push(`partner "${partner}" hasn't been declared${hint}`);
+      reasons.push(`partner ${quote(partner)} hasn't been declared${hint}`);
       fields.push('partner');
       undeclared.push({ kind: 'partner', name: partner });
     }

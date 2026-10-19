@@ -9,7 +9,7 @@ import {
 } from '../constants.ts';
 import { CommandSchema, type Command } from '../schemas/command.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
-import { formatList } from '../utils/text.ts';
+import { formatList, quote } from '../utils/text.ts';
 
 export type ParseResult =
   | { status: 'skip' }
@@ -49,8 +49,8 @@ export function wordPositionOf(
 function unknownCommand(word: string): ParseResult {
   const hint = suggest(word, KEYWORDS);
   const message = hint
-    ? `unknown command "${word}"${didYouMean(hint)}`
-    : `unknown command "${word}"; expected ${formatList(KEYWORDS)}`;
+    ? `unknown command ${quote(word)}${didYouMean(hint)}`
+    : `unknown command ${quote(word)}; expected ${formatList(KEYWORDS)}`;
   return failure(message, [0], 'unknownCommand');
 }
 

@@ -4,6 +4,7 @@ import {
   type SkipReason,
 } from '../constants.ts';
 import type { Command } from '../schemas/command.ts';
+import { quote } from '../utils/text.ts';
 import { rankRelationships, type CompanyRelationships } from './analyze.ts';
 import { Network, type NameReference, type NetworkCounts } from './network.ts';
 import { parseLine, wordPositionOf } from './parse.ts';
@@ -132,7 +133,7 @@ export async function analyzeLines(
         const key = referenceKey(declared);
         for (const earlier of waitingForDeclaration.get(key) ?? []) {
           earlier.notes.push(
-            `"${declared.name}" is declared later, on line ${lineNumber}; declarations must come before the lines that use them`,
+            `${quote(declared.name)} is declared later, on line ${lineNumber}; declarations must come before the lines that use them`,
           );
         }
         waitingForDeclaration.delete(key);

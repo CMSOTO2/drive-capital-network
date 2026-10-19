@@ -124,15 +124,22 @@ error: company "Globexx" isn't in the input (did you mean "Globex"?)
 
 ```console
 $ analyze-network --stats --quiet examples/edge-cases.txt
-ACME: Adam (1)
-…
 stats:
   lines: 28 read, 15 commands, 11 skipped, 2 blank or comments
   partners: 4
   companies: 4 (2 with a relationship, 2 without)
   employees: 3
   contacts: 4 (1 email, 1 call, 2 coffee)
-  skipped lines: 4 undeclared name, 2 unknown command, 1 employee redeclared, 1 invalid contact type, 1 invalid name, 1 swapped contact arguments, 1 wrong word count
+  skipped lines: 11
+    undeclared name: 4
+    unknown command: 2
+    employee redeclared: 1
+    invalid contact type: 1
+    invalid name: 1
+    swapped contact arguments: 1
+    wrong word count: 1
+ACME: Adam (1)
+…
 ```
 
 With `--format json`, the same summary is printed to stderr as JSON. Stats hold counts only, never names, so they're safe to log or share. [Decision record 0007](./docs/decisions/0007-usage-telemetry.md) explains how this would feed product analytics in a real deployment.

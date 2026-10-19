@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 import { CONTACT_TYPES, NAME_PATTERN } from '../constants.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
-import { formatList } from '../utils/text.ts';
+import { formatList, quote } from '../utils/text.ts';
 
 /** A name made of letters only; `label` says what kind of name in errors. */
 export const nameSchema = (label: string) =>
   z.string().regex(NAME_PATTERN, {
     error: (issue) =>
-      `${label} "${String(issue.input)}" must contain only letters A-Z or a-z`,
+      `${label} ${quote(String(issue.input))} must contain only letters A-Z or a-z`,
   });
 
 export const ContactTypeSchema = z.enum(CONTACT_TYPES, {
@@ -16,8 +16,8 @@ export const ContactTypeSchema = z.enum(CONTACT_TYPES, {
     const input = String(issue.input);
     const hint = suggest(input, CONTACT_TYPES);
     return hint
-      ? `contact type "${input}" is not valid${didYouMean(hint)}`
-      : `contact type "${input}" is not one of ${formatList(CONTACT_TYPES)}`;
+      ? `contact type ${quote(input)} is not valid${didYouMean(hint)}`
+      : `contact type ${quote(input)} is not one of ${formatList(CONTACT_TYPES)}`;
   },
 });
 

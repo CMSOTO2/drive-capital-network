@@ -20,15 +20,18 @@ export async function runCli(
   {
     stdin = '',
     stdinIsTTY = false,
+    outputIsTTY = false,
     env = {},
   }: {
     stdin?: string;
     stdinIsTTY?: boolean;
+    /** Pretend stdout and stderr are both an interactive terminal. */
+    outputIsTTY?: boolean;
     env?: Record<string, string>;
   } = {},
 ): Promise<CliRun> {
-  const stdout = new PassThrough();
-  const stderr = new PassThrough();
+  const stdout = Object.assign(new PassThrough(), { isTTY: outputIsTTY });
+  const stderr = Object.assign(new PassThrough(), { isTTY: outputIsTTY });
   const readStdout = collect(stdout);
   const readStderr = collect(stderr);
   const input = Object.assign(Readable.from([stdin]), {
