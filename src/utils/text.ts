@@ -13,3 +13,16 @@ export const findCaseMismatch = (
     (candidate) =>
       candidate !== word && candidate.toLowerCase() === word.toLowerCase(),
   );
+
+/**
+ * Alphabetical order that ignores case (`ACME` < `apple` < `Globex`), with
+ * plain code-unit order as a tiebreak so that `Acme` and `ACME` still sort
+ * the same way every time.
+ */
+export const compareNames = (a: string, b: string): number => {
+  const lowerA = a.toLowerCase();
+  const lowerB = b.toLowerCase();
+  if (lowerA !== lowerB) return lowerA < lowerB ? -1 : 1;
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+};

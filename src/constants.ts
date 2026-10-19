@@ -39,9 +39,11 @@ export type Keyword = keyof typeof COMMAND_SYNTAX;
 export const KEYWORDS = Object.keys(COMMAND_SYNTAX) as Keyword[];
 
 /** Some Windows editors put this invisible character at the start of a file. */
-export const BYTE_ORDER_MARK = '﻿';
+export const BYTE_ORDER_MARK = '\uFEFF';
 
 export const COMMENT_PREFIX = '#';
 
 /** The output line for a company nobody at Drive has contacted. */
 export const NO_RELATIONSHIP = 'No current relationship';
+
+export const OUTPUT_FORMATS = ['text', 'json'] as const;

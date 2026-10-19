@@ -12,13 +12,13 @@ src/
 ├── core/               pure domain logic, no I/O
 │   ├── parse.ts        line → command | error | skip
 │   ├── network.ts      Network model, contacts counted at ingest
-│   ├── analyze.ts      (planned) rank partners per company
-│   ├── format.ts       (planned) text and JSON reports
+│   ├── analyze.ts      rank partners per company
+│   ├── format.ts       text and JSON reports
 │   └── pipeline.ts     (planned) lines → relationships + diagnostics
 ├── cli/                the only layer that touches process, files, and streams
 │   └── main.ts         (planned) entry point and `bin`
 └── utils/
-    └── text.ts         small string helpers (list joining, case hints)
+    └── text.ts         small string helpers (list joining, case hints, name order)
 test/                   mirrors src/ one-to-one (test/core/parse.test.ts, …)
 examples/               sample input from the prompt and its expected output
 ```
@@ -43,15 +43,15 @@ input (file or STDIN)
 
 | File                     | Responsibility                                                                                                                                                                                                                                                   | Status      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `src/constants.ts`       | `NAME_PATTERN`, `CONTACT_TYPES`, `COMMAND_KINDS`, `COMMAND_SYNTAX` (keyword → fields and usage string), `KEYWORDS`, the byte order mark, the comment prefix, and the `No current relationship` text                                                              | done        |
+| `src/constants.ts`       | `NAME_PATTERN`, `CONTACT_TYPES`, `COMMAND_KINDS`, `COMMAND_SYNTAX` (keyword → fields and usage string), `KEYWORDS`, the byte order mark, the comment prefix, and the `No current relationship` text, and `OUTPUT_FORMATS`                                        | done        |
 | `src/schemas/command.ts` | Zod schemas for the four commands and `ContactType`. The `Command` union is inferred with `z.infer`, so types and runtime checks can't drift apart. Custom error messages turn Zod issues into plain-English warnings                                            | done        |
 | `src/core/parse.ts`      | `parseLine(line)` → `{ status: 'ok', command }`, `{ status: 'error', message }`, or `{ status: 'skip' }` for blank and `#` comment lines. Checks the keyword and word count itself (so it can show the usage), then validates with `CommandSchema`. Never throws | done        |
 | `src/core/network.ts`    | `Network` class. `apply(command)` updates the model in input order and returns a warning string when a command refers to something undeclared or contradicts an earlier declaration. Exposes `companies` and `strengthsFor(company)`                             | done        |
-| `src/core/analyze.ts`    | Ranks partners for each company, with companies sorted                                                                                                                                                                                                           | _(planned)_ |
-| `src/core/format.ts`     | Renders the `<Company>: <Partner> (<n>)` / `No current relationship` report                                                                                                                                                                                      | _(planned)_ |
+| `src/core/analyze.ts`    | `rankRelationships(network)` → `CompanyRelationships[]`: companies sorted by name, each with every partner who has contact, strongest first. `strongestPartner` picks the first. Keeping the full ranking (not just the winner) costs little and powers `--json` | done        |
+| `src/core/format.ts`     | `formatLine` and `formatTextReport` render the prompt's `<Company>: <Partner> (<n>)` / `No current relationship` lines. `formatJsonReport` renders the same data as JSON: `company`, `partner` (or `null`), `strength`, and the full `partners` ranking          | done        |
 | `src/core/pipeline.ts`   | Wires parse → network → analyze; collects warnings with line numbers                                                                                                                                                                                             | _(planned)_ |
 | `src/cli/main.ts`        | argv handling, file vs. STDIN, stdout/stderr, exit codes                                                                                                                                                                                                         | _(planned)_ |
-| `src/utils/text.ts`      | `formatList` (`a, b, or c`) and `findCaseMismatch` (powers the "did you mean" hints)                                                                                                                                                                             | done        |
+| `src/utils/text.ts`      | `formatList` (`a, b, or c`), `findCaseMismatch` (powers the "did you mean" hints), and `compareNames` (case-insensitive order with a code-unit tiebreak)                                                                                                         | done        |
 
 ## Data model
 
@@ -78,7 +78,7 @@ Keywords and contact types are case-sensitive, as the prompt writes them. A near
 
 ## Rules
 
-- **Strongest partner:** highest count; ties go to the alphabetically first partner name.
+- **Strongest partner:** highest count; ties go to the alphabetically first partner name (same order as companies). Partners with no contact with a company aren't ranked for it.
 - **Company order:** case-insensitive alphabetical, then ordinal comparison as a tiebreak so the order is fully deterministic.
 - **Processing order:** commands apply in input order. A contact that refers to an employee or partner not yet declared is a warning, not a forward reference.
 
@@ -98,7 +98,7 @@ The stdout report never contains warnings, so `analyze-network file | …` stays
 With L lines, C companies, and P partner/company pairs that have at least one contact:
 
 - Ingest: O(L) time.
-- Analysis: O(C log C + P).
+- Analysis: O(C log C + P log P), from sorting companies and ranking each company's partners.
 - Memory: O(partners + companies + employees + P). Input is streamed, never held whole.
 
 ## Tooling

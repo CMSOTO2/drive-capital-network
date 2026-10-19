@@ -62,7 +62,9 @@ describe('parseLine', () => {
     });
 
     it('strips a UTF-8 byte order mark at the start of the line', () => {
-      expect(parseLine('﻿Partner Chris')).toEqual(parseLine('Partner Chris'));
+      expect(parseLine('\uFEFFPartner Chris')).toEqual(
+        parseLine('Partner Chris'),
+      );
     });
   });
 

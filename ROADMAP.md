@@ -27,9 +27,9 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 ## Phase 3: Analysis and formatting (`feat:`)
 
-- [ ] `src/core/analyze.ts`: `strongestRelationships`
-- [ ] `src/core/format.ts`: `formatLine`, `formatReport`
-- [ ] Tests: tie-breaking, no relationship, company sort order (mixed case), partner with zero contacts, empty network
+- [x] `src/core/analyze.ts`: `rankRelationships`, `strongestPartner`
+- [x] `src/core/format.ts`: `formatLine`, `formatTextReport`, `formatJsonReport`
+- [x] Tests: tie-breaking, no relationship, company sort order (mixed case), partner with zero contacts, empty network, JSON shape
 
 ## Phase 4: CLI (`feat:`)
 
