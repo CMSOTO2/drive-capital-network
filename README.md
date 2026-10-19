@@ -42,6 +42,8 @@ VS Code users: the repo recommends the Oxc extension and formats on save with ox
 
 The program works as a pipeline: read lines, parse each into a typed command, apply it to an in-memory network model, then analyze and format the result. Only the CLI entry point touches I/O. Everything else is a pure function or a small class, so each stage has its own unit tests.
 
+The code is split into layers: constants and Zod schemas at the bottom, pure domain logic in `src/core/`, and all I/O in `src/cli/`. Tests mirror that layout. [ARCHITECTURE.md](./ARCHITECTURE.md#folder-structure) has the full tree.
+
 Relationship strength is counted while the input is read rather than afterwards. Each `Contact` looks up its employee's company and adds one to that company/partner pair, so analysis is a single pass over the counts. [ARCHITECTURE.md](./ARCHITECTURE.md) covers the module layout, data model, and tradeoffs.
 
 ### Design decisions

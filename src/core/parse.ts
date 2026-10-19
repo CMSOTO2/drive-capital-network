@@ -1,20 +1,17 @@
 import {
+  BYTE_ORDER_MARK,
   COMMAND_SYNTAX,
-  CommandSchema,
-  findCaseMismatch,
-  formatList,
+  COMMENT_PREFIX,
   KEYWORDS,
-  type Command,
   type Keyword,
-} from './commands.ts';
+} from '../constants.ts';
+import { CommandSchema, type Command } from '../schemas/command.ts';
+import { findCaseMismatch, formatList } from '../utils/text.ts';
 
 export type ParseResult =
   | { status: 'skip' }
   | { status: 'ok'; command: Command }
   | { status: 'error'; message: string };
-
-const BYTE_ORDER_MARK = '﻿';
-const COMMENT_PREFIX = '#';
 
 const isKeyword = (word: string): word is Keyword =>
   Object.hasOwn(COMMAND_SYNTAX, word);

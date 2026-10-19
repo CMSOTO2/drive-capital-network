@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseLine } from '../src/parse.ts';
+import { parseLine } from '../../src/core/parse.ts';
 
 const errorOf = (line: string): string => {
   const result = parseLine(line);

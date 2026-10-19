@@ -4,13 +4,13 @@
   "private": true,
   "description": "Herbie network analyzer: finds the Drive Capital partner with the strongest relationship to each company.",
   "bin": {
-    "analyze-network": "dist/cli.js"
+    "analyze-network": "dist/cli/main.js"
   },
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "analyze": "node dist/cli.js",
-    "dev": "node src/cli.ts",
+    "analyze": "node dist/cli/main.js",
+    "dev": "node src/cli/main.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint --deny-warnings",

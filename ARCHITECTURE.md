@@ -2,31 +2,56 @@
 
 > Keep this file in sync with `src/`. If a module, type, or rule below no longer matches the code, update this file in the same commit. Modules marked _(planned)_ don't exist yet.
 
+## Folder structure
+
+```
+src/
+├── constants.ts        all constants: name pattern, contact types, keyword syntax, output text
+├── schemas/            Zod schemas; TypeScript types are inferred from them
+│   └── command.ts
+├── core/               pure domain logic, no I/O
+│   ├── parse.ts        line → command | error | skip
+│   ├── network.ts      Network model, contacts counted at ingest
+│   ├── analyze.ts      (planned) rank partners per company
+│   ├── format.ts       (planned) text and JSON reports
+│   └── pipeline.ts     (planned) lines → relationships + diagnostics
+├── cli/                the only layer that touches process, files, and streams
+│   └── main.ts         (planned) entry point and `bin`
+└── utils/
+    └── text.ts         small string helpers (list joining, case hints)
+test/                   mirrors src/ one-to-one (test/core/parse.test.ts, …)
+examples/               sample input from the prompt and its expected output
+```
+
+Dependencies point one way: `cli → core → schemas → constants`, and every layer may use `utils`. `core` never imports from `cli`, so the whole domain can be tested without touching the filesystem.
+
 ## Data flow
 
 ```
 input (file or STDIN)
-  → readline, one line at a time            cli.ts
-  → parseLine(line) → ok | error | skip      parse.ts
-  → network.apply(command) → warnings       network.ts
-  → strongestRelationships(network)         analyze.ts
-  → formatReport(results)                   format.ts
-  → stdout (report), stderr (warnings)      cli.ts
+  → read one line at a time                   cli/main.ts
+  → parseLine(line) → ok | error | skip       core/parse.ts
+  → network.apply(command) → warning?         core/network.ts
+  → rank partners per company                 core/analyze.ts
+  → render the report                         core/format.ts
+  → stdout (report), stderr (warnings)        cli/main.ts
 ```
 
-`run.ts` wires these stages together and returns `{ output, warnings }`. `cli.ts` is the only module that does I/O: it resolves the input source, streams lines into `run`, writes the results, and sets the exit code. Every other module is pure, so tests call it directly with strings and plain objects.
+`core/pipeline.ts` wires the core stages together. `cli/` is the only layer that does I/O: it resolves the input source, streams lines into the pipeline, writes the results, and sets the exit code.
 
 ## Modules
 
-| File              | Responsibility                                                                                                                                                                                                                                                                  | Status      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `src/commands.ts` | Zod schemas for the four commands and `ContactType` (`email`, `call`, `coffee`). The `Command` union is inferred from them with `z.infer`, so the types and the runtime checks can't drift apart. `COMMAND_SYNTAX` maps each keyword to its fields and usage string             | done        |
-| `src/parse.ts`    | `parseLine(line)` → `{ status: 'ok', command }`, `{ status: 'error', message }`, or `{ status: 'skip' }` for blank and `#` comment lines. Checks the keyword and word count itself (so it can show the usage), then validates names and the contact type with Zod. Never throws | done        |
-| `src/network.ts`  | `Network` class: holds the declared entities and the relationship counts; `apply(command)` returns any warnings                                                                                                                                                                 | _(planned)_ |
-| `src/analyze.ts`  | `strongestRelationships(network)` → `CompanyRelationship[]`, sorted by company                                                                                                                                                                                                  | _(planned)_ |
-| `src/format.ts`   | `formatLine` / `formatReport`: produce the `<Company>: <Partner> (<n>)` and `No current relationship` lines                                                                                                                                                                     | _(planned)_ |
-| `src/run.ts`      | Wires parse → network → analyze → format; collects warnings with line numbers                                                                                                                                                                                                   | _(planned)_ |
-| `src/cli.ts`      | argv handling, file vs. STDIN, stdout/stderr, exit codes                                                                                                                                                                                                                        | _(planned)_ |
+| File                     | Responsibility                                                                                                                                                                                                                                                   | Status      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `src/constants.ts`       | `NAME_PATTERN`, `CONTACT_TYPES`, `COMMAND_KINDS`, `COMMAND_SYNTAX` (keyword → fields and usage string), `KEYWORDS`, the byte order mark, the comment prefix, and the `No current relationship` text                                                              | done        |
+| `src/schemas/command.ts` | Zod schemas for the four commands and `ContactType`. The `Command` union is inferred with `z.infer`, so types and runtime checks can't drift apart. Custom error messages turn Zod issues into plain-English warnings                                            | done        |
+| `src/core/parse.ts`      | `parseLine(line)` → `{ status: 'ok', command }`, `{ status: 'error', message }`, or `{ status: 'skip' }` for blank and `#` comment lines. Checks the keyword and word count itself (so it can show the usage), then validates with `CommandSchema`. Never throws | done        |
+| `src/core/network.ts`    | `Network` class. `apply(command)` updates the model in input order and returns a warning string when a command refers to something undeclared or contradicts an earlier declaration. Exposes `companies` and `strengthsFor(company)`                             | done        |
+| `src/core/analyze.ts`    | Ranks partners for each company, with companies sorted                                                                                                                                                                                                           | _(planned)_ |
+| `src/core/format.ts`     | Renders the `<Company>: <Partner> (<n>)` / `No current relationship` report                                                                                                                                                                                      | _(planned)_ |
+| `src/core/pipeline.ts`   | Wires parse → network → analyze; collects warnings with line numbers                                                                                                                                                                                             | _(planned)_ |
+| `src/cli/main.ts`        | argv handling, file vs. STDIN, stdout/stderr, exit codes                                                                                                                                                                                                         | _(planned)_ |
+| `src/utils/text.ts`      | `formatList` (`a, b, or c`) and `findCaseMismatch` (powers the "did you mean" hints)                                                                                                                                                                             | done        |
 
 ## Data model
 
@@ -78,7 +103,7 @@ With L lines, C companies, and P partner/company pairs that have at least one co
 
 ## Tooling
 
-- **TypeScript 7** (`tsconfig.json`): the `@tsconfig/node24` base (ES2024, `nodenext`) plus the Total TypeScript strictness set: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`. `erasableSyntaxOnly` keeps `node src/cli.ts` working through Node's type stripping, so no enums or namespaces, and imports use `.ts` extensions that `tsc` rewrites to `.js`.
+- **TypeScript 7** (`tsconfig.json`): the `@tsconfig/node24` base (ES2024, `nodenext`) plus the Total TypeScript strictness set: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`. `erasableSyntaxOnly` keeps `node src/cli/main.ts` working through Node's type stripping, so no enums or namespaces, and imports use `.ts` extensions that `tsc` rewrites to `.js`.
 - **Zod 4** validates parsed commands. It's the only runtime dependency. Zod's error messages are customized so a bad line reads as plain English, e.g. `contact type "Coffee" is not valid (did you mean "coffee"?)`.
 - **Vitest** for unit tests in `test/`.
 - **oxlint** (`.oxlintrc.json`): `correctness` rules are errors; `suspicious` and `perf` are warnings. Plugins: eslint, typescript, unicorn, oxc, import, node, promise, vitest. Extra rules: `eqeqeq`, `consistent-type-imports`, `no-explicit-any`, `prefer-node-protocol`, `import/no-cycle`, and no focused tests. `pnpm lint` runs with `--deny-warnings`, so any warning fails `pnpm check`. Type-aware rules such as `no-floating-promises` would need `oxlint-tsgolint`, which isn't installed.

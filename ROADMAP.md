@@ -16,25 +16,25 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 ## Phase 1: Parsing (`feat:`)
 
-- [x] `src/commands.ts`: Zod schemas, inferred `Command` union and `ContactType`
-- [x] `src/parse.ts`: `parseLine`
+- [x] `src/schemas/command.ts`: Zod schemas, inferred `Command` union and `ContactType`; constants in `src/constants.ts`
+- [x] `src/core/parse.ts`: `parseLine`
 - [x] Tests: each command type, invalid contact type, wrong word count, unknown command, non-letter names, blank lines, CRLF, extra whitespace, `#` comments, byte order mark, case-mismatch hints
 
 ## Phase 2: Network model (`feat:`)
 
-- [ ] `src/network.ts`: `Network.apply`, counting at ingest
-- [ ] Tests: counts across several employees of one company, duplicate declarations, employee redeclared at another company, contacts with unknown employee or partner
+- [x] `src/core/network.ts`: `Network.apply`, counting at ingest
+- [x] Tests: counts across several employees of one company, duplicate declarations, employee redeclared at another company, contacts with unknown employee or partner, forward references, shared names across namespaces
 
 ## Phase 3: Analysis and formatting (`feat:`)
 
-- [ ] `src/analyze.ts`: `strongestRelationships`
-- [ ] `src/format.ts`: `formatLine`, `formatReport`
+- [ ] `src/core/analyze.ts`: `strongestRelationships`
+- [ ] `src/core/format.ts`: `formatLine`, `formatReport`
 - [ ] Tests: tie-breaking, no relationship, company sort order (mixed case), partner with zero contacts, empty network
 
 ## Phase 4: CLI (`feat:`)
 
-- [ ] `src/run.ts`: wires the stages, collects warnings with line numbers
-- [ ] `src/cli.ts`: file argument, STDIN (no argument or `-`), exit codes
+- [ ] `src/core/pipeline.ts`: wires the stages, collects warnings with line numbers
+- [ ] `src/cli/main.ts`: file argument, STDIN (no argument or `-`), exit codes
 - [ ] Golden test: `examples/input.txt` → `examples/expected.txt`
 - [ ] Test: bad-input fixture prints warnings to stderr, a clean report to stdout, exits 0
 - [ ] Test: missing file exits 1

@@ -1,31 +1,13 @@
 import { z } from 'zod';
 
-/** A word is one or more ASCII letters, per the prompt. */
-export const NAME_PATTERN = /^[A-Za-z]+$/;
-
-export const CONTACT_TYPES = ['email', 'call', 'coffee'] as const;
-
-/** Joins items as `a, b, or c`. */
-export const formatList = (items: readonly string[]): string =>
-  items.length > 1
-    ? `${items.slice(0, -1).join(', ')}, or ${items.at(-1)}`
-    : items.join('');
+import { CONTACT_TYPES, NAME_PATTERN } from '../constants.ts';
+import { findCaseMismatch, formatList } from '../utils/text.ts';
 
 const nameSchema = (label: string) =>
   z.string().regex(NAME_PATTERN, {
     error: (issue) =>
       `${label} "${String(issue.input)}" must contain only letters A-Z or a-z`,
   });
-
-/** Finds a candidate that differs from `word` only by letter case. */
-export const findCaseMismatch = (
-  word: string,
-  candidates: readonly string[],
-): string | undefined =>
-  candidates.find(
-    (candidate) =>
-      candidate !== word && candidate.toLowerCase() === word.toLowerCase(),
-  );
 
 export const ContactTypeSchema = z.enum(CONTACT_TYPES, {
   error: (issue) => {
@@ -73,29 +55,3 @@ export type CompanyCommand = z.infer<typeof CompanyCommandSchema>;
 export type EmployeeCommand = z.infer<typeof EmployeeCommandSchema>;
 export type ContactCommand = z.infer<typeof ContactCommandSchema>;
 export type Command = z.infer<typeof CommandSchema>;
-
-/**
- * How each input keyword maps to a command: the field each word fills, in
- * order, and the usage shown when the word count is wrong.
- */
-export const COMMAND_SYNTAX = {
-  Partner: { kind: 'partner', fields: ['name'], usage: 'Partner <Name>' },
-  Company: { kind: 'company', fields: ['name'], usage: 'Company <Name>' },
-  Employee: {
-    kind: 'employee',
-    fields: ['name', 'company'],
-    usage: 'Employee <Name> <CompanyName>',
-  },
-  Contact: {
-    kind: 'contact',
-    fields: ['employee', 'partner', 'type'],
-    usage: `Contact <EmployeeName> <PartnerName> <${CONTACT_TYPES.join('|')}>`,
-  },
-} as const satisfies Record<
-  string,
-  { kind: Command['kind']; fields: readonly string[]; usage: string }
->;
-
-export type Keyword = keyof typeof COMMAND_SYNTAX;
-
-export const KEYWORDS = Object.keys(COMMAND_SYNTAX) as Keyword[];

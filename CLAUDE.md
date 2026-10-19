@@ -16,6 +16,7 @@ README.md, ARCHITECTURE.md, and ROADMAP.md describe the code. After any change t
 ## Code
 
 - Node 24, pnpm, TypeScript strict. Only erasable syntax (no enums or namespaces); relative imports use `.ts` extensions.
-- Only `src/cli.ts` does I/O. Keep everything else pure and unit tested.
-- Tests go in `test/<module>.test.ts` (Vitest). New behavior needs a test.
+- Layout (see ARCHITECTURE.md): constants in `src/constants.ts`, Zod schemas in `src/schemas/`, pure logic in `src/core/`, I/O only in `src/cli/`, shared helpers in `src/utils/`. Imports point one way: `cli → core → schemas → constants`.
+- No magic strings or numbers in logic; put them in `src/constants.ts`.
+- Tests mirror `src/` (`src/core/parse.ts` → `test/core/parse.test.ts`), using Vitest. New behavior needs a test.
 - Lint with oxlint, format with oxfmt.
