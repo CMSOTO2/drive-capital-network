@@ -32,14 +32,24 @@ export function shouldUseColor({ flag, isTTY, env }: ColorContext): boolean {
 const plural = (count: number, word: string): string =>
   `${count.toLocaleString('en-US')} ${word}${count === 1 ? '' : 's'}`;
 
+export type Severity = 'error' | 'warning' | 'note';
+
+const SEVERITY_COLORS = {
+  error: 'red',
+  warning: 'yellow',
+  note: 'cyan',
+} as const satisfies Record<Severity, Style>;
+
 export function renderMessage(
-  severity: 'error' | 'warning' | 'note',
+  severity: Severity,
   message: string,
   palette: Palette,
 ): string {
-  const color =
-    severity === 'error' ? 'red' : severity === 'warning' ? 'yellow' : 'cyan';
-  return `${palette.paint(['bold', color], `${severity}:`)} ${message}\n`;
+  const label = palette.paint(
+    ['bold', SEVERITY_COLORS[severity]],
+    `${severity}:`,
+  );
+  return `${label} ${message}\n`;
 }
 
 /**

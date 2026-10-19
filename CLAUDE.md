@@ -18,5 +18,6 @@ README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md (under "Unreleased") de
 - Node 24, pnpm, TypeScript strict. Only erasable syntax (no enums or namespaces); relative imports use `.ts` extensions.
 - Layout (see ARCHITECTURE.md): constants in `src/constants.ts`, Zod schemas in `src/schemas/`, pure logic in `src/core/`, I/O only in `src/cli/`, shared helpers in `src/utils/`. Imports point one way: `cli → core → schemas → constants`.
 - No magic strings or numbers in logic; put them in `src/constants.ts`.
+- Readable over clever: named intermediate values, plain `if` over chained ternaries or `&&`/`||` tricks, and a comment with an example for any non-obvious algorithm.
 - Tests mirror `src/` (`src/core/parse.ts` → `test/core/parse.test.ts`), using Vitest. New behavior needs a test.
 - Lint with oxlint, format with oxfmt.

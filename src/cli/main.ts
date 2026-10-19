@@ -47,13 +47,17 @@ function describeFsError(error: unknown): string {
 
 /** Fails fast with a clear message before any line is read. */
 async function openFile(path: string): Promise<Readable> {
+  const cannotRead = (reason: string) =>
+    new InputError(`cannot read "${path}": ${reason}`);
+
+  let isDirectory: boolean;
   try {
-    if ((await stat(path)).isDirectory()) {
-      throw Object.assign(new Error(), { code: 'EISDIR' });
-    }
+    isDirectory = (await stat(path)).isDirectory();
   } catch (error) {
-    throw new InputError(`cannot read "${path}": ${describeFsError(error)}`);
+    throw cannotRead(describeFsError(error));
   }
+  if (isDirectory) throw cannotRead('it is a directory');
+
   return createReadStream(path);
 }
 

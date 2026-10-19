@@ -13,8 +13,11 @@ export interface CompanyRelationships {
   partners: PartnerStrength[];
 }
 
-const byStrengthThenName = (a: PartnerStrength, b: PartnerStrength): number =>
-  b.strength - a.strength || compareNames(a.partner, b.partner);
+/** Strongest first; equal strengths fall back to alphabetical order. */
+function byStrengthThenName(a: PartnerStrength, b: PartnerStrength): number {
+  if (a.strength !== b.strength) return b.strength - a.strength;
+  return compareNames(a.partner, b.partner);
+}
 
 /**
  * Ranks every partner's relationship to every company. Companies are sorted
