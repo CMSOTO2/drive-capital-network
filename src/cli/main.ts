@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
@@ -157,7 +156,8 @@ export async function main(io: CliIo): Promise<number> {
   return missing.length > 0 ? EXIT_CODES.inputProblem : EXIT_CODES.ok;
 }
 
-if (import.meta.main) {
+/** Runs the CLI against the real process: argv, streams, env, exit code. */
+export async function runFromProcess(): Promise<void> {
   // `analyze-network big.txt | head -1` closes the pipe early; that's fine.
   process.stdout.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code === 'EPIPE') process.exit(EXIT_CODES.ok);

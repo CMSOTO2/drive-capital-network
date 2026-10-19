@@ -15,7 +15,7 @@ README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md (under "Unreleased") de
 
 ## Code
 
-- Node 24, pnpm, TypeScript strict. Only erasable syntax (no enums or namespaces); relative imports use `.ts` extensions.
+- Node 22.18+ (CI tests 22.18 and 24; develop on 24), pnpm, TypeScript strict. Don't use Node APIs newer than 22.18. Only erasable syntax (no enums or namespaces); relative imports use `.ts` extensions.
 - Layout (see ARCHITECTURE.md): constants in `src/constants.ts`, Zod schemas in `src/schemas/`, pure logic in `src/core/`, I/O only in `src/cli/`, shared helpers in `src/utils/`. Imports point one way: `cli → core → schemas → constants`.
 - No magic strings or numbers in logic; put them in `src/constants.ts`.
 - Readable over clever: named intermediate values, plain `if` over chained ternaries or `&&`/`||` tricks, and a comment with an example for any non-obvious algorithm.

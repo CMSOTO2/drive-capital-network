@@ -24,26 +24,24 @@ Hooli: Molly (1)
 
 ## Quick start
 
-Requires **Node 24+** and **pnpm 10**. `.nvmrc` pins Node 24 (`nvm use`), and `pnpm install` refuses to run on an older Node.
+Requires **Node 22.18 or newer** and **pnpm 10**. CI tests Node 22.18 and 24; `.nvmrc` pins 24 for development (`nvm use`).
 
 ```bash
 pnpm install
-pnpm build
-
-# From a file
-node dist/cli/main.js examples/input.txt
-
-# From STDIN
-cat examples/input.txt | node dist/cli/main.js
+./analyze_network examples/input.txt          # from a file
+cat examples/input.txt | ./analyze_network    # from STDIN
 ```
 
-Shortcuts:
+`./analyze_network` runs the TypeScript source directly (Node strips the types itself), so there's no build step. Other ways to run it:
 
-| Command               | What it does                                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm analyze <file>` | Runs the built CLI (`node dist/cli/main.js`)                                                                                      |
-| `pnpm dev <file>`     | Runs the TypeScript source directly, no build step                                                                                |
-| `pnpm link --global`  | Puts `analyze-network` on your `PATH`, as in the examples below (run `pnpm setup` once first if pnpm has no global bin directory) |
+| Command                                     | What it does                                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm build && node dist/cli/bin.js <file>` | Compiles to `dist/` and runs the compiled CLI                                                                                     |
+| `pnpm -s analyze <file>`                    | Same as above, after `pnpm build`. Keep `-s`: without it, pnpm prints its own header lines into the output                        |
+| `pnpm -s dev <file>`                        | Runs the source, like `./analyze_network`                                                                                         |
+| `pnpm link --global`                        | Puts `analyze-network` on your `PATH`, as in the examples below (run `pnpm setup` once first if pnpm has no global bin directory) |
+
+On Windows, use `node analyze_network examples/input.txt`.
 
 ## Usage
 
@@ -165,7 +163,7 @@ The code is split into layers: constants and Zod schemas at the bottom, pure dom
 
 Each of these has a short decision record in [`docs/decisions/`](./docs/decisions/).
 
-- **TypeScript on Node 24.** It's the language I'm most fluent in. `tsc` builds to `dist/`, and `pnpm dev` runs the source directly through Node's built-in type stripping.
+- **TypeScript on Node 22.18+.** It's the language I'm most fluent in. `tsc` builds to `dist/`, and `./analyze_network` runs the source directly through Node's built-in type stripping, so reviewers can skip the build.
 - **Zod at the input boundary.** Command shapes are defined once as Zod schemas, and the TypeScript types are inferred from them, so compile-time types and runtime checks can't drift apart. Every line is validated before it reaches the network model. The CLI options use the same approach.
 - **Count contacts as they're read.** Each `Contact` adds one to its company/partner pair immediately instead of being stored. Memory grows with the number of company/partner pairs, not the number of contacts, and ranking is a single pass. The cost is that per-contact detail (type, employee) isn't kept; [ROADMAP.md](./ROADMAP.md) covers when that would change.
 - **Lenient by default, strict on request.** The prompt says input is well formed, but a real data feed won't always be. One bad line shouldn't hide the answer for every other company, so the tool warns and keeps going. `--strict` is there for pipelines that would rather fail.

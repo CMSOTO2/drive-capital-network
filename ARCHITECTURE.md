@@ -17,13 +17,15 @@ src/
 │   ├── format.ts       text and JSON reports
 │   └── pipeline.ts     lines → report + diagnostics
 ├── cli/                the only layer that touches process, files, and streams
-│   ├── main.ts         entry point (`bin`): reads input, writes output, sets the exit code
+│   ├── bin.ts          entry point for the `analyze-network` command
+│   ├── main.ts         `main(io)`: reads input, writes output, returns the exit code
 │   ├── args.ts         argv → validated options
 │   ├── help.ts         --help text
 │   └── render.ts       warnings, notes, and color
 └── utils/
     ├── suggest.ts      "did you mean" suggestions (edit distance)
     └── text.ts         small string helpers (list joining, name order)
+analyze_network         runs src/cli/main.ts from source, no build (Node type stripping)
 test/                   mirrors src/ (test/core/parse.test.ts, …), plus helpers/
 examples/               the prompt's example and an edge-case file, each with expected output
 docs/decisions/         architecture decision records
@@ -57,7 +59,8 @@ input (file or STDIN)
 | `src/core/analyze.ts`    | `rankRelationships(network)` → `CompanyRelationships[]`: companies sorted by name, each with every partner who has contact, strongest first. `strongestPartner` picks the first. Keeping the full ranking costs little and powers `--format json`. `selectCompanies(report, names)` narrows the report for `--company` and lists missing names with a suggestion                                       |
 | `src/core/format.ts`     | `formatLine` and `formatTextReport` render the prompt's `<Company>: <Partner> (<n>)` / `No current relationship` lines. `formatJsonReport` renders the same data as JSON: `company`, `partner` (or `null`), `strength`, and the full `partners` ranking. With `{ details: true }`, text lines list every partner: `Globex: Chris (2), Molly (1)`                                                       |
 | `src/core/pipeline.ts`   | `analyzeLines(lines, { strict })` → `{ report, diagnostics, commandCount, aborted }`. Keeps diagnostics that are waiting on an undeclared name; when that name is declared later, it adds a note with the line number. With `strict`, stops at the first diagnostic and returns an empty report                                                                                                        |
-| `src/cli/main.ts`        | `main(io)`: the whole CLI as a function of injected streams, argv, and env, returning an exit code. Opens the input (checking for a missing file, a directory, or a permission problem first), streams it through the pipeline, and writes the report and diagnostics. When run directly (`import.meta.main`), wires in `process` and exits quietly on `EPIPE`                                         |
+| `src/cli/bin.ts`         | The `bin` entry point: calls `runFromProcess()`. Kept apart from `main.ts` so importing `main.ts` never starts the CLI                                                                                                                                                                                                                                                                                 |
+| `src/cli/main.ts`        | `main(io)`: the whole CLI as a function of injected streams, argv, and env, returning an exit code. Opens the input (checking for a missing file, a directory, or a permission problem first), streams it through the pipeline, and writes the report and diagnostics. `runFromProcess()` wires in the real `process` and exits quietly on `EPIPE`                                                     |
 | `src/cli/args.ts`        | `parseCliArgs(argv)`: tokenizes with `node:util` `parseArgs`, shortens Node's error messages, rejects extra positional arguments, and validates with `CliOptionsSchema`                                                                                                                                                                                                                                |
 | `src/cli/help.ts`        | The `--help` text, built from `COMMAND_SYNTAX`, `OUTPUT_FORMATS`, and `EXIT_CODES` so it can't fall out of date                                                                                                                                                                                                                                                                                        |
 | `src/cli/render.ts`      | Compiler-style diagnostics: `warning: line N: …`, the line itself, a row of `^` under the words at fault (`underlineWords`), and `= note:` lines. Also the summary notes, the `MAX_PRINTED_DIAGNOSTICS` cap, and color via `node:util` `styleText`. `shouldUseColor` honors `--color`/`--no-color`, `NO_COLOR`, `FORCE_COLOR`, and whether stderr is a terminal                                        |
@@ -133,7 +136,7 @@ The stdout report never contains diagnostics or color codes, so `analyze-network
 | --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Unit            | `test/core/`, `test/schemas/`, `test/utils/`              | Each rule in isolation with plain values                                                                                 |
 | CLI, in process | `test/cli/main.test.ts`, `args.test.ts`, `render.test.ts` | `main(io)` with fake streams: golden output for both examples, STDIN, CRLF, every exit code, formats, color, file errors |
-| End to end      | `test/cli/e2e.test.ts`                                    | The real entry point in a child process: shebang, `import.meta.main`, real pipes, process exit codes                     |
+| End to end      | `test/cli/e2e.test.ts`                                    | `src/cli/bin.ts` and `./analyze_network` in a child process: real pipes and process exit codes                           |
 
 The golden tests compare against `examples/*.expected.txt`, the same files a reviewer would use by hand.
 
@@ -148,7 +151,7 @@ With L lines, C companies, and P partner/company pairs that have at least one co
 
 ## Tooling
 
-- **TypeScript 7** (`tsconfig.json`): the `@tsconfig/node24` base (ES2024, `nodenext`) plus the Total TypeScript strictness set: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`. `erasableSyntaxOnly` keeps `node src/cli/main.ts` working through Node's type stripping, so no enums or namespaces, and imports use `.ts` extensions that `tsc` rewrites to `.js`.
+- **TypeScript 7** (`tsconfig.json`): the `@tsconfig/node24` base (ES2024, `nodenext`) plus the Total TypeScript strictness set: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`. `erasableSyntaxOnly` keeps `./analyze_network` and `node src/cli/bin.ts` working through Node's type stripping, so no enums or namespaces, and imports use `.ts` extensions that `tsc` rewrites to `.js`.
 - **Zod 4** validates parsed commands and CLI options. It's the only runtime dependency; argument parsing (`parseArgs`), line reading (`readline`), and color (`styleText`) come from Node itself. Zod's error messages are customized so a bad line reads as plain English, e.g. `contact type "Coffee" is not valid (did you mean "coffee"?)`.
 - **Vitest** for unit, in-process CLI, and end-to-end tests in `test/`.
 - **oxlint** (`.oxlintrc.json`): `correctness` rules are errors; `suspicious` and `perf` are warnings. Plugins: eslint, typescript, unicorn, oxc, import, node, promise, vitest. Extra rules: `eqeqeq`, `consistent-type-imports`, `no-explicit-any`, `prefer-node-protocol`, `import/no-cycle`, and no focused tests. `pnpm lint` runs with `--deny-warnings`, so any warning fails `pnpm check`. Type-aware rules such as `no-floating-promises` would need `oxlint-tsgolint`, which isn't installed.

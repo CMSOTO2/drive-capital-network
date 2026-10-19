@@ -13,6 +13,6 @@ TypeScript in strict mode on Node 24, with pnpm, Vitest, oxlint, and oxfmt. The 
 
 ## Consequences
 
-- Reviewers need Node 24. `.nvmrc` and `engine-strict` make a version mismatch fail early with a clear message.
+- **Update:** the code runs on Node 22.18+ as well (the first Node 22 release that strips types by default). CI tests 22.18 and 24, so reviewers on the previous LTS don't need to upgrade. `engine-strict` makes an older Node fail at install time with a clear message, and `.nvmrc` pins 24 for development.
 - Strict compiler flags (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) catch missing-value bugs at compile time.
 - Node's standard library covers argument parsing (`parseArgs`), line reading (`readline`), and color (`styleText`), so Zod is the only runtime dependency.

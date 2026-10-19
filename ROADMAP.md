@@ -60,6 +60,14 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] `--company <name>` to report on specific companies, with a suggestion for unknown names
 - [x] `--details` to show every partner's strength in text output
 
+## Phase 7: Reviewer experience, stats, accessibility
+
+- [x] `./analyze_network` at the repo root: runs from source right after `pnpm install`
+- [x] Node 22.18+ support, with CI testing Node 22.18 and 24
+- [ ] `--stats`: summary of the data and of skipped lines by reason
+- [ ] `--plain` mode and other accessibility fixes
+- [ ] Decision records for telemetry and accessibility
+
 ## Later (not planned for the submission)
 
 - **Weighted contact types:** a coffee probably says more about a relationship than an email. This would be a weight table in `constants.ts` and one line in `Network`.

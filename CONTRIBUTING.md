@@ -5,7 +5,7 @@ Thanks for helping out. This guide covers the workflow; [ARCHITECTURE.md](./ARCH
 ## Setup
 
 ```bash
-nvm use          # Node 24, from .nvmrc
+nvm use          # Node 24 from .nvmrc (22.18+ also works)
 pnpm install     # also installs the git hooks
 pnpm check       # should pass before you change anything
 ```

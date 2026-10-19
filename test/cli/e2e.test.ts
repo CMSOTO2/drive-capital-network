@@ -5,11 +5,11 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Runs the real entry point in a child process, the way a reviewer would,
- * to cover what in-process tests can't: the shebang, `import.meta.main`,
+ * to cover what in-process tests can't: the entry points,
  * process exit codes, and real pipes.
  */
 const run = (args: string[], input?: string) =>
-  spawnSync(process.execPath, ['src/cli/main.ts', ...args], {
+  spawnSync(process.execPath, ['src/cli/bin.ts', ...args], {
     input,
     encoding: 'utf8',
     env: { ...process.env, NO_COLOR: '1' },
@@ -41,5 +41,18 @@ describe('analyze-network (child process)', () => {
 
   it('exits 2 for a missing file', () => {
     expect(run(['missing.txt']).status).toBe(2);
+  });
+
+  it('runs from source through ./analyze_network, with no build', () => {
+    const { status, stdout, stderr } = spawnSync(
+      process.execPath,
+      ['analyze_network', 'examples/input.txt'],
+      { encoding: 'utf8' },
+    );
+    expect({ status, stdout, stderr }).toEqual({
+      status: 0,
+      stdout: expected,
+      stderr: '',
+    });
   });
 });
