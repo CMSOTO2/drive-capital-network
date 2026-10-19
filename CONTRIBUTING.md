@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping out. This guide covers the workflow; [ARCHITECTURE.md](./ARCHITECTURE.md) covers the code.
+Thanks for helping out. This guide covers the workflow; [ARCHITECTURE.md](./ARCHITECTURE.md) covers the code. The requirements come from [the prompt](./docs/prompt.md), kept verbatim; don't edit it. If a change touches behavior the prompt describes, check it against the prompt, and record any interpretation in the README's "Assumptions and edge cases" table.
 
 ## Setup
 

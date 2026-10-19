@@ -22,4 +22,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - "Did you mean" hints for mistyped options (`--detail` → `--details`) and file names (`inptu.txt` → `input.txt`, `input` → `input.txt`).
 - Warnings cut lines over 100 characters to an excerpt around the words at fault, and shorten names over 40 characters, so one huge line can't flood the terminal.
 - On a terminal, a blank line separates the warnings from the report. `…and N more warnings` points to `--stats`, and `--stats` lists skipped lines one reason per row.
+- `docs/prompt.md`: the take-home prompt, verbatim, with a test that runs its example exactly as written. The README maps each requirement to the code that meets it.
 - Tooling: TypeScript 7, Vitest, oxlint, oxfmt, husky + lint-staged pre-commit hook, commitlint, and GitHub Actions CI.

@@ -9,5 +9,5 @@
   "endOfLine": "lf",
   "sortImports": true,
   "sortPackageJson": true,
-  "ignorePatterns": ["dist", "coverage", "pnpm-lock.yaml"]
+  "ignorePatterns": ["dist", "coverage", "pnpm-lock.yaml", "docs/prompt.md"]
 }

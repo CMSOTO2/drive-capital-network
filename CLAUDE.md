@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Drive Capital take-home: a TypeScript CLI that reports the strongest partner relationship per company. The prompt's rules come first. See README.md for the output format and assumptions.
+Drive Capital take-home: a TypeScript CLI that reports the strongest partner relationship per company. The prompt's rules come first: it's kept verbatim in `docs/prompt.md` (never edit it), and `test/docs/prompt.test.ts` runs its example. Before changing behavior, check it against the prompt; where the prompt is unclear, record the interpretation in the README's "Assumptions and edge cases" table. See README.md for the output format and assumptions.
 
 ## Docs stay in sync with the code
 

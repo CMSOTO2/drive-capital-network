@@ -29,9 +29,10 @@ src/
     └── text.ts         small string helpers (list joining, name order)
 analyze_network         runs src/cli/main.ts from source, no build (Node type stripping)
 scripts/stress.ts       generates long, messy inputs plus a reference answer
-test/                   mirrors src/ (test/core/parse.test.ts, …), plus helpers/
+test/                   mirrors src/ (test/core/parse.test.ts, …), plus helpers/ and docs/ (runs the prompt's example)
 examples/               the prompt's example and an edge-case file, each with expected output
 └── scenarios/          30 small inputs (happy, unhappy, awkward) plus a 12,000-line stress file, each with expected output
+docs/prompt.md          the take-home prompt, verbatim: the source of truth for requirements
 docs/decisions/         architecture decision records
 ```
 
@@ -150,6 +151,7 @@ The stdout report never contains diagnostics or color codes, so `analyze-network
 | CLI, in process       | `test/cli/main.test.ts`, `args.test.ts`, `render.test.ts` | `main(io)` with fake streams: golden output for both examples, STDIN, CRLF, every exit code, formats, color, `--company`, `--details`, `--stats`, `--plain` and `TERM=dumb`, file errors                                                     |
 | End to end            | `test/cli/e2e.test.ts`                                    | `src/cli/bin.ts` and `./analyze_network` in a child process: real pipes and process exit codes                                                                                                                                               |
 | Scenarios             | `test/cli/scenarios.test.ts`                              | Every `examples/scenarios/*.txt` against its `.expected.txt` (stdout and exit code). New scenarios are picked up automatically                                                                                                               |
+| Prompt                | `test/docs/prompt.test.ts`                                | The example in `docs/prompt.md`, read straight from the file and run exactly as written (comment line included), plus a check that `examples/input.txt` is the same example                                                                  |
 | Stress (differential) | `test/scripts/stress.test.ts`                             | The program against the independent reference model in `scripts/stress.ts`: 25 seeds of 2,000 contacts through the pipeline, and 200,000 contacts piped through the CLI. Checks the report, the skipped-line count, and the counted contacts |
 
 The golden tests compare against `examples/*.expected.txt` and `examples/scenarios/*.expected.txt`, the same files a reviewer would use by hand. Their expected outputs were derived from the rules by hand, not captured from the tool, so they check behaviour rather than repeat it. `.gitattributes` keeps the example files byte-exact.
