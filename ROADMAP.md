@@ -76,4 +76,5 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
   - "Who at Drive can introduce me to the CEO of ACME?" (needs titles and a graph traversal)
 - **Recency:** weight recent contacts above old ones. The input would need timestamps.
 - **Forward references:** accept a contact before its employee or partner is declared, by buffering unresolved contacts until the end. This costs memory proportional to the unresolved contacts.
+- **Opt-in usage telemetry**, following the rules in [decision record 0007](./docs/decisions/0007-usage-telemetry.md): counts only, off by default, `DO_NOT_TRACK` respected.
 - **Publish to npm** so `npx analyze-network` works without cloning.

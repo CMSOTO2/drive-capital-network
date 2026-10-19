@@ -61,7 +61,7 @@ Input comes from `file`, or from STDIN when `file` is missing or `-`. The report
 | `-s`, `--stats`             | Summarize the input on stderr: counts of everything declared, contacts by type, and skipped lines by reason. JSON with `--format json` |
 | `--strict`                  | Stop at the first invalid line and exit 1, printing no report                                                                          |
 | `-q`, `--quiet`             | Don't print warnings about skipped lines                                                                                               |
-| `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color                                                                   |
+| `--color`, `--no-color`     | Force color on or off for warnings. By default color is on only when stderr is a terminal; `NO_COLOR=1` and `FORCE_COLOR=1` work too   |
 | `--plain`                   | Screen-reader-friendly output: no color, no decoration, ASCII only. Automatic when `TERM=dumb`                                         |
 | `-h`, `--help`              | Show help                                                                                                                              |
 | `-v`, `--version`           | Show the version                                                                                                                       |
@@ -246,7 +246,10 @@ I used Claude Code throughout, with the same review bar I'd apply to a teammate'
 
 - **Planning:** I gave it the prompt and asked for a plan before any code. We agreed on the pipeline, the data model, and the edge-case table above. I made the design calls: ties, lenient error handling, counting at ingest, and a CLI over a web UI.
 - **Tooling:** it set up TypeScript, oxlint, oxfmt, Vitest, husky, commitlint, and CI. When it was unsure of current versions or options, it checked the installed packages' schemas and the official docs, and it tested that each hook actually blocks a bad commit.
-- **Code and tests:** it implemented each roadmap phase as small Conventional Commits, writing tests alongside the code. I reviewed the diffs and steered along the way, e.g. the folder layout, splitting out schemas and constants, and using Zod for validation.
+- **Code and tests:** it implemented each roadmap phase as small Conventional Commits, writing tests alongside the code. I reviewed the diffs and steered along the way: the folder layout, splitting out schemas and constants, Zod for validation, rewriting dense code (the edit-distance function) to read plainly, and pushing on user experience, accessibility, and analytics.
+- **Product questions:** I used it as a sounding board, not just a code generator. When I asked about a web UI, it argued for putting the effort into the CLI instead. When I asked for analytics, it pointed out that sending usage data from a tool full of people's names would be a privacy problem, so we built local `--stats` and wrote down how opt-in telemetry would work instead. I agreed with both calls.
+- **Verification:** it checked its own claims instead of asserting them. Node 22 support was proven by running the full test suite under Node 22 via `npx`, not assumed, and each feature was run against the example files before being committed.
+- **Where it slipped:** a couple of times, a script that edited the docs stopped partway and the commit went in with half-updated docs, once leaving a stray `\1` in a table. It caught both on review and amended the commits before anything was pushed. That's the reason docs and code are now checked together on every commit.
 - **Docs:** it drafted this README, ARCHITECTURE.md, ROADMAP.md, and the decision records. A rule in [CLAUDE.md](./CLAUDE.md) requires them to change in the same commit as the code they describe, which kept them accurate as the design changed.
 
 ## What was challenging
@@ -254,6 +257,8 @@ I used Claude Code throughout, with the same review bar I'd apply to a teammate'
 - **Reading between the lines of the spec.** Most of the work was deciding what to do where the prompt is silent: ties, forward references, bad contact types, the `#` comment in the example. I treated each one as a product decision, picked something deterministic, and wrote it down instead of guessing silently.
 - **Leniency versus correctness.** Skipping bad lines is friendlier, but silently wrong output is worse than a crash. The answer was to stay lenient and make every skip visible (line number, the line itself, a summary), and to add `--strict` for callers that would rather fail.
 - **Good error messages from a schema library.** Zod's default messages are written for developers. Getting from a generic enum error to `contact type "Coffee" is not valid (did you mean "coffee"?)` meant checking structure (keyword, word count) before Zod, and customizing Zod's messages for the rest.
+- **Analytics without surveillance.** Usage data would make the tool better, but the input is people's names and who talked to whom. The answer was to give users the numbers locally (`--stats`, counts only, never names) and to write down the rules opt-in telemetry would have to follow before anyone builds it.
+- **Compiler-style output versus screen readers.** The `^` markers and gutter that make warnings easy to scan visually are noise to a screen reader. Instead of dropping them, `--plain` says the same thing in sentences and turns on automatically for dumb terminals.
 - **New tooling.** TypeScript 7, oxlint, and oxfmt are recent, so some common advice didn't apply. For example, VS Code's `typescript.tsdk` setting doesn't work with TypeScript 7. Each config was checked against the installed version instead of copied from older examples.
 
 See [ROADMAP.md](./ROADMAP.md) for what I'd build next.

@@ -36,7 +36,7 @@ docs: explain the tie-breaking rule
 | `docs`     | Documentation only                  |
 | `chore`    | Tooling, dependencies, config       |
 
-Scopes match the folders and modules: `parse`, `network`, `report`, `cli`, `schemas`.
+Scopes name the area changed: a module (`parse`, `network`, `report`, `stats`, `cli`, `schemas`) or a cross-cutting concern (`hints`, `diagnostics`, `a11y`).
 
 ## Code standards
 
