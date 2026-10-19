@@ -22,6 +22,8 @@ export const CliOptionsSchema = z.object({
   company: z.array(nameSchema('--company')).default([]),
   details: z.boolean().default(false),
   stats: z.boolean().default(false),
+  /** Screen-reader-friendly output; see `Layout` in cli/render.ts. */
+  plain: z.boolean().default(false),
   /** Input file path; `undefined` means STDIN. */
   file: z.string().min(1, { error: 'input file path is empty' }).optional(),
 });

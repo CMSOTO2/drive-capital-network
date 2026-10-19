@@ -17,6 +17,7 @@ const OPTIONS = {
   company: { type: 'string', short: 'c', multiple: true },
   details: { type: 'boolean', short: 'd' },
   stats: { type: 'boolean', short: 's' },
+  plain: { type: 'boolean' },
 } as const;
 
 /** Node's parseArgs messages are long; keep the part a user needs. */

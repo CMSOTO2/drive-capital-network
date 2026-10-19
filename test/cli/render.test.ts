@@ -6,9 +6,11 @@ import {
   createPalette,
   renderDiagnostic,
   renderDiagnostics,
+  chooseOutputStyle,
   renderStats,
   shouldUseColor,
   underlineWords,
+  wordsAt,
 } from '../../src/cli/render.ts';
 import { MAX_PRINTED_DIAGNOSTICS } from '../../src/constants.ts';
 import type { Diagnostic, PipelineResult } from '../../src/core/pipeline.ts';
@@ -64,6 +66,33 @@ describe('renderDiagnostic', () => {
     ).not.toContain('^');
   });
 
+  it('says the same thing in words in the plain layout', () => {
+    expect(
+      renderDiagnostic(
+        { ...diagnostic, notes: ['"text" appears later'] },
+        'warning',
+        plain,
+        'plain',
+      ),
+    ).toBe(
+      'warning: line 3: contact type "text" is not one of email, call, or coffee\n' +
+        '  line 3 reads: Contact Laurie Chris text\n' +
+        '  word at fault: "text"\n' +
+        '  note: "text" appears later\n',
+    );
+  });
+
+  it('lists several words at fault in the plain layout', () => {
+    expect(
+      renderDiagnostic(
+        { ...diagnostic, words: [1, 2] },
+        'warning',
+        plain,
+        'plain',
+      ),
+    ).toContain('  words at fault: "Laurie", "Chris"\n');
+  });
+
   it('adds notes below the line', () => {
     expect(
       renderDiagnostic(
@@ -107,10 +136,25 @@ describe('renderDiagnostics', () => {
     );
     const output = renderDiagnostics(resultWith({ diagnostics }), plain);
     expect(output.match(/^warning:/gm)).toHaveLength(MAX_PRINTED_DIAGNOSTICS);
-    expect(output).toContain('…and 1,205 more warnings\n');
+    expect(output).toContain('\n…and 1,205 more warnings\n');
     expect(output).toContain(
       `skipped ${(MAX_PRINTED_DIAGNOSTICS + 1205).toLocaleString('en-US')} invalid lines`,
     );
+  });
+
+  it('never dims the "more warnings" line, and uses ASCII when plain', () => {
+    const diagnostics = Array.from(
+      { length: MAX_PRINTED_DIAGNOSTICS + 1 },
+      (_, index) => ({ ...diagnostic, line: index + 1 }),
+    );
+    const colored = renderDiagnostics(
+      resultWith({ diagnostics }),
+      createPalette(true),
+    );
+    expect(colored).toMatch(/\n…and 1 more warning\n/);
+    expect(
+      renderDiagnostics(resultWith({ diagnostics }), plain, 'plain'),
+    ).toContain('\n...and 1 more warning\n');
   });
 
   it('asks whether it is the right file when nothing was valid', () => {
@@ -247,5 +291,46 @@ describe('renderStats', () => {
       plain,
     );
     expect(output).toContain('  skipped lines: none\n');
+  });
+});
+
+describe('wordsAt', () => {
+  it('returns the words at the given positions, in order, once each', () => {
+    expect(wordsAt('Contact Chris Sarah call', [2, 1, 2])).toEqual([
+      'Chris',
+      'Sarah',
+    ]);
+  });
+
+  it('ignores positions past the end of the line', () => {
+    expect(wordsAt('Company', [3])).toEqual([]);
+  });
+});
+
+describe('chooseOutputStyle', () => {
+  const base = { plainFlag: false, flag: undefined, isTTY: true, env: {} };
+
+  it('is rich and colored on a terminal by default', () => {
+    expect(chooseOutputStyle(base)).toEqual({ layout: 'rich', color: true });
+  });
+
+  it('is plain and uncolored with --plain', () => {
+    expect(chooseOutputStyle({ ...base, plainFlag: true })).toEqual({
+      layout: 'plain',
+      color: false,
+    });
+  });
+
+  it('is plain on a dumb terminal', () => {
+    expect(chooseOutputStyle({ ...base, env: { TERM: 'dumb' } })).toEqual({
+      layout: 'plain',
+      color: false,
+    });
+  });
+
+  it('lets an explicit --color win, even in plain layout', () => {
+    expect(chooseOutputStyle({ ...base, plainFlag: true, flag: true })).toEqual(
+      { layout: 'plain', color: true },
+    );
   });
 });

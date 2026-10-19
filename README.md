@@ -18,6 +18,7 @@ Hooli: Molly (1)
 - [Development](#development)
 - [Approach](#approach)
 - [Assumptions and edge cases](#assumptions-and-edge-cases)
+- [Accessibility](#accessibility)
 - [How I used LLMs](#how-i-used-llms)
 - [What was challenging](#what-was-challenging)
 - Further reading: [ARCHITECTURE.md](./ARCHITECTURE.md), [ROADMAP.md](./ROADMAP.md), [decision records](./docs/decisions/), [CONTRIBUTING.md](./CONTRIBUTING.md), [CHANGELOG.md](./CHANGELOG.md)
@@ -61,6 +62,7 @@ Input comes from `file`, or from STDIN when `file` is missing or `-`. The report
 | `--strict`                  | Stop at the first invalid line and exit 1, printing no report                                                                          |
 | `-q`, `--quiet`             | Don't print warnings about skipped lines                                                                                               |
 | `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color                                                                   |
+| `--plain`                   | Screen-reader-friendly output: no color, no decoration, ASCII only. Automatic when `TERM=dumb`                                         |
 | `-h`, `--help`              | Show help                                                                                                                              |
 | `-v`, `--version`           | Show the version                                                                                                                       |
 
@@ -149,6 +151,24 @@ $ analyze-network --format json examples/input.txt
 ```
 
 (Compacted here; the real output puts one key per line.)
+
+### Accessibility
+
+- **Color is never the only signal.** Every message starts with a word (`error:`, `warning:`, `note:`), and color only reinforces it. Color is off when output isn't a terminal, with `NO_COLOR` set, or with `--no-color`.
+- **Informational text is never dimmed**, since dim text is hard to read on many terminal themes. Only decoration (the `|` gutter) is dimmed.
+- **`--plain` for screen readers.** The default warning layout draws a gutter and `^` markers, which a screen reader reads out as noise ("caret caret caret"). `--plain` says the same thing in words, uses ASCII only, and turns on automatically when `TERM=dumb`:
+
+  ```console
+  $ analyze-network --plain examples/edge-cases.txt
+  warning: line 20: contact skipped: partner "Rezzan" hasn't been declared
+    line 20 reads: Contact Peter Rezzan call
+    word at fault: "Rezzan"
+    note: "Rezzan" is declared later, on line 21; declarations must come before the lines that use them
+  ```
+
+- **Plain-language messages.** Every warning names the line and the value at fault in words and suggests a fix, so the markers are a convenience, not a requirement. `--help` and the exit codes are written the same way.
+
+See [decision record 0008](./docs/decisions/0008-accessible-output.md).
 
 ## Development
 

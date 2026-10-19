@@ -169,6 +169,35 @@ describe('main', () => {
     });
   });
 
+  describe('accessibility', () => {
+    it('prints plain, ASCII-only warnings with --plain', async () => {
+      const { stdout, stderr } = await runCli([
+        '--plain',
+        'examples/edge-cases.txt',
+      ]);
+      expect(stderr).toContain('  line 20 reads: Contact Peter Rezzan call\n');
+      expect(stderr).toContain('  word at fault: "Rezzan"\n');
+      expect(stderr).not.toContain('^');
+      expect(stderr).not.toContain(' | ');
+      const nonAscii = [...(stderr + stdout)].filter(
+        (character) => (character.codePointAt(0) ?? 0) > 127,
+      );
+      expect(nonAscii).toEqual([]);
+    });
+
+    it('switches to plain output when TERM=dumb', async () => {
+      const { stderr } = await runCli(['examples/edge-cases.txt'], {
+        env: { TERM: 'dumb', FORCE_COLOR: '1' },
+      });
+      expect(stderr).toContain('reads:');
+      expect(stderr).not.toContain('\u001B[');
+    });
+
+    it('lists --plain in the help', async () => {
+      expect((await runCli(['--help'])).stdout).toContain('--plain');
+    });
+  });
+
   describe('--stats', () => {
     it('prints a summary on stderr and leaves stdout unchanged', async () => {
       const { code, stdout, stderr } = await runCli([

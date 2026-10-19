@@ -18,7 +18,7 @@ import {
   renderDiagnostics,
   renderMessage,
   renderStats,
-  shouldUseColor,
+  chooseOutputStyle,
   type Palette,
 } from './render.ts';
 
@@ -94,13 +94,13 @@ function fail(io: CliIo, palette: Palette, message: string): number {
 /** Runs the CLI and returns the exit code. */
 export async function main(io: CliIo): Promise<number> {
   const args = parseCliArgs(io.argv);
-  const palette = createPalette(
-    shouldUseColor({
-      flag: args.ok ? args.options.color : undefined,
-      isTTY: io.stderr.isTTY,
-      env: io.env,
-    }),
-  );
+  const { layout, color } = chooseOutputStyle({
+    plainFlag: args.ok && args.options.plain,
+    flag: args.ok ? args.options.color : undefined,
+    isTTY: io.stderr.isTTY,
+    env: io.env,
+  });
+  const palette = createPalette(color);
 
   if (!args.ok) {
     return fail(io, palette, `${args.message}\n${USAGE_HINT}`);
@@ -135,7 +135,7 @@ export async function main(io: CliIo): Promise<number> {
   }
 
   if (!options.quiet || result.aborted) {
-    io.stderr.write(renderDiagnostics(result, palette));
+    io.stderr.write(renderDiagnostics(result, palette, layout));
   }
   if (options.stats) {
     const stats = summarize(result);

@@ -6,6 +6,13 @@ import type { RunStats } from '../core/stats.ts';
 
 type Style = Parameters<typeof styleText>[0];
 
+/**
+ * `rich` decorates diagnostics with a gutter and `^` markers. `plain` is for
+ * screen readers and dumb terminals: no decoration, ASCII only, and the words
+ * at fault are named in text instead of marked.
+ */
+export type Layout = 'rich' | 'plain';
+
 export interface Palette {
   paint(style: Style, text: string): string;
 }
@@ -28,6 +35,28 @@ export function shouldUseColor({ flag, isTTY, env }: ColorContext): boolean {
   if (env['NO_COLOR']) return false;
   if (env['FORCE_COLOR'] !== undefined) return env['FORCE_COLOR'] !== '0';
   return isTTY === true;
+}
+
+export interface OutputStyleContext extends ColorContext {
+  /** --plain */
+  plainFlag: boolean;
+}
+
+/**
+ * Plain layout when asked for, or when the terminal says it can't handle
+ * more (`TERM=dumb`). Plain output is uncolored unless --color says otherwise.
+ */
+export function chooseOutputStyle({
+  plainFlag,
+  flag,
+  isTTY,
+  env,
+}: OutputStyleContext): { layout: Layout; color: boolean } {
+  const layout: Layout = plainFlag || env['TERM'] === 'dumb' ? 'plain' : 'rich';
+
+  if (flag !== undefined) return { layout, color: flag };
+  if (layout === 'plain') return { layout, color: false };
+  return { layout, color: shouldUseColor({ flag, isTTY, env }) };
 }
 
 /** `1,234`: thousands separators make big counts easier to read. */
@@ -56,19 +85,27 @@ export function renderMessage(
   return `${label} ${message}\n`;
 }
 
+/** Where each word of `text` starts and ends. */
+function wordSpans(text: string): { start: number; end: number }[] {
+  return [...text.matchAll(/\S+/g)].map((match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+}
+
+/** The given word positions in order, without duplicates. */
+const uniqueSorted = (positions: readonly number[]): number[] =>
+  [...new Set(positions)].toSorted((a, b) => a - b);
+
 /**
  * A row of `^` under the given words, e.g. `            ^^^^` for word 2 of
  * `Contact Laurie Chris text`. Tabs are shown as single spaces so the markers
  * line up.
  */
 export function underlineWords(text: string, words: readonly number[]): string {
-  const spans = [...text.matchAll(/\S+/g)].map((match) => ({
-    start: match.index,
-    end: match.index + match[0].length,
-  }));
-
+  const spans = wordSpans(text);
   let underline = '';
-  for (const position of [...new Set(words)].toSorted((a, b) => a - b)) {
+  for (const position of uniqueSorted(words)) {
     const span = spans[position];
     if (span === undefined) continue;
     underline += ' '.repeat(span.start - underline.length);
@@ -77,28 +114,58 @@ export function underlineWords(text: string, words: readonly number[]): string {
   return underline;
 }
 
+/** The text of the given words, e.g. `["Chris", "Sarah"]`. */
+export function wordsAt(text: string, words: readonly number[]): string[] {
+  const allWords = text.match(/\S+/g) ?? [];
+  return uniqueSorted(words)
+    .map((position) => allWords[position])
+    .filter((word) => word !== undefined);
+}
+
 /**
- * One problem, compiler style:
+ * One problem, compiler style (rich layout):
  *
  *   warning: line 20: contact skipped: partner "Rezzan" hasn't been declared
  *     20 | Contact Peter Rezzan call
  *        |               ^^^^^^
- *        = note: "Rezzan" is declared later, on line 21; …
+ *        = note: "Rezzan" is declared later, on line 21; ...
+ *
+ * The plain layout says the same thing in words:
+ *
+ *   warning: line 20: contact skipped: partner "Rezzan" hasn't been declared
+ *     line 20 reads: Contact Peter Rezzan call
+ *     word at fault: "Rezzan"
+ *     note: "Rezzan" is declared later, on line 21; ...
  */
 export function renderDiagnostic(
   diagnostic: Diagnostic,
   severity: 'error' | 'warning',
   palette: Palette,
+  layout: Layout = 'rich',
 ): string {
   const lineNumber = String(diagnostic.line);
-  const blankGutter = ' '.repeat(lineNumber.length);
   const shownText = diagnostic.text.replaceAll('\t', ' ');
-
   let output = renderMessage(
     severity,
     `line ${lineNumber}: ${diagnostic.message}`,
     palette,
   );
+
+  if (layout === 'plain') {
+    output += `  line ${lineNumber} reads: ${shownText}\n`;
+    const atFault = wordsAt(shownText, diagnostic.words);
+    if (atFault.length > 0) {
+      const label = atFault.length === 1 ? 'word at fault' : 'words at fault';
+      const quoted = atFault.map((word) => `"${word}"`).join(', ');
+      output += `  ${label}: ${quoted}\n`;
+    }
+    for (const note of diagnostic.notes) {
+      output += `  note: ${note}\n`;
+    }
+    return output;
+  }
+
+  const blankGutter = ' '.repeat(lineNumber.length);
   output += `${palette.paint('dim', `  ${lineNumber} | `)}${shownText}\n`;
 
   const underline = underlineWords(shownText, diagnostic.words);
@@ -117,6 +184,7 @@ export function renderDiagnostic(
 export function renderDiagnostics(
   result: PipelineResult,
   palette: Palette,
+  layout: Layout = 'rich',
 ): string {
   const { diagnostics, aborted, commandCount, report } = result;
 
@@ -124,7 +192,7 @@ export function renderDiagnostics(
     const [first] = diagnostics;
     if (!first) return '';
     return (
-      renderDiagnostic(first, 'error', palette) +
+      renderDiagnostic(first, 'error', palette, layout) +
       renderMessage(
         'note',
         `stopped at line ${first.line} because of --strict`,
@@ -146,10 +214,15 @@ export function renderDiagnostics(
   const shown = diagnostics.slice(0, MAX_PRINTED_DIAGNOSTICS);
   const hidden = diagnostics.length - shown.length;
   let output = shown
-    .map((diagnostic) => renderDiagnostic(diagnostic, 'warning', palette))
+    .map((diagnostic) =>
+      renderDiagnostic(diagnostic, 'warning', palette, layout),
+    )
     .join('');
   if (hidden > 0) {
-    output += palette.paint('dim', `…and ${plural(hidden, 'more warning')}\n`);
+    // Not dimmed: it's information, and dim text is hard to read on many
+    // terminal themes. Plain layout sticks to ASCII.
+    const ellipsis = layout === 'plain' ? '...' : '…';
+    output += `${ellipsis}and ${plural(hidden, 'more warning')}\n`;
   }
 
   output += renderMessage(

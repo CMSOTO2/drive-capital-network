@@ -17,6 +17,7 @@ README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md (under "Unreleased") de
 
 - Node 22.18+ (CI tests 22.18 and 24; develop on 24), pnpm, TypeScript strict. Don't use Node APIs newer than 22.18. Only erasable syntax (no enums or namespaces); relative imports use `.ts` extensions.
 - Layout (see ARCHITECTURE.md): constants in `src/constants.ts`, Zod schemas in `src/schemas/`, pure logic in `src/core/`, I/O only in `src/cli/`, shared helpers in `src/utils/`. Imports point one way: `cli → core → schemas → constants`.
+- Accessible output: color is never the only signal, information is never dimmed, and the `plain` layout in `src/cli/render.ts` must say everything the `rich` one does.
 - No magic strings or numbers in logic; put them in `src/constants.ts`.
 - Readable over clever: named intermediate values, plain `if` over chained ternaries or `&&`/`||` tricks, and a comment with an example for any non-obvious algorithm.
 - Tests mirror `src/` (`src/core/parse.ts` → `test/core/parse.test.ts`), using Vitest. New behavior needs a test.

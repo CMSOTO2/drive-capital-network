@@ -28,7 +28,9 @@ Options
   -s, --stats               Summarize the input on stderr (JSON with --format json)
       --strict              Stop at the first invalid line and exit ${EXIT_CODES.inputProblem}
   -q, --quiet               Don't print warnings about skipped lines
-      --no-color            Plain warnings (NO_COLOR=1 works too)
+      --no-color            No colors (NO_COLOR=1 works too)
+      --plain               Screen-reader-friendly output: no color, no
+                            decoration, ASCII only (automatic with TERM=dumb)
   -h, --help                Show this help
   -v, --version             Show the version
 

@@ -42,6 +42,7 @@ Scopes match the folders and modules: `parse`, `network`, `report`, `cli`, `sche
 
 - **Layers:** constants in `src/constants.ts`, Zod schemas in `src/schemas/`, pure logic in `src/core/`, I/O only in `src/cli/`. Imports point one way: `cli → core → schemas → constants`.
 - **Readable over clever.** Name intermediate values, prefer `if` over chained ternaries or `&&` tricks, and explain non-obvious algorithms in a comment with an example. A reviewer should understand a function on the first read.
+- **Accessible output.** Never use color as the only signal, never dim text that carries information, and keep the `plain` layout in `src/cli/render.ts` saying everything the `rich` one does.
 - **No magic values** in logic. Add them to `src/constants.ts`.
 - **Validate at the boundary.** New input shapes get a Zod schema, and their types come from `z.infer`.
 - **Erasable TypeScript only** (no enums or namespaces), so `pnpm dev` can run the source directly. Relative imports use `.ts` extensions.

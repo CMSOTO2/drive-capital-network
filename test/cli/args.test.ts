@@ -25,6 +25,7 @@ describe('parseCliArgs', () => {
       company: [],
       details: false,
       stats: false,
+      plain: false,
     });
   });
 
@@ -32,6 +33,10 @@ describe('parseCliArgs', () => {
     const options = optionsOf(['-c', 'ACME', '--company', 'Hooli', '-d']);
     expect(options.company).toEqual(['ACME', 'Hooli']);
     expect(options.details).toBe(true);
+  });
+
+  it('reads --plain', () => {
+    expect(optionsOf(['--plain']).plain).toBe(true);
   });
 
   it('reads --stats and -s', () => {
@@ -66,6 +71,7 @@ describe('parseCliArgs', () => {
       company: [],
       details: false,
       stats: false,
+      plain: false,
       file: 'in.txt',
     });
     expect(optionsOf(['--format=json']).format).toBe('json');
