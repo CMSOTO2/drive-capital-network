@@ -1,6 +1,5 @@
 import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import { createInterface } from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
 import { z } from 'zod';
@@ -13,6 +12,7 @@ import { summarize } from '../core/stats.ts';
 import { didYouMean } from '../utils/suggest.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
+import { readLines } from './lines.ts';
 import {
   createPalette,
   renderDiagnostics,
@@ -75,13 +75,11 @@ async function analyzeInput(
   strict: boolean,
   source: string,
 ): Promise<PipelineResult> {
-  const lines = createInterface({ input, crlfDelay: Infinity });
   try {
-    return await analyzeLines(lines, { strict });
+    return await analyzeLines(readLines(input), { strict });
   } catch (error) {
     throw new InputError(`cannot read ${source}: ${describeFsError(error)}`);
   } finally {
-    lines.close();
     input.destroy();
   }
 }
