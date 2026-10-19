@@ -9,6 +9,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     strategy:
+      # Report every Node version, even when one fails.
+      fail-fast: false
       matrix:
         # The oldest supported Node (package.json "engines") and the one in .nvmrc.
         node: ['22.18', '24']
