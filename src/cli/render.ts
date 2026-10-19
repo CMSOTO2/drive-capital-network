@@ -186,7 +186,7 @@ export function renderDiagnostics(
   palette: Palette,
   layout: Layout = 'rich',
 ): string {
-  const { diagnostics, aborted, commandCount, report } = result;
+  const { diagnostics, skippedCount, aborted, commandCount, report } = result;
 
   if (aborted) {
     const [first] = diagnostics;
@@ -201,7 +201,7 @@ export function renderDiagnostics(
     );
   }
 
-  if (diagnostics.length === 0) {
+  if (skippedCount === 0) {
     return report.length === 0
       ? renderMessage(
           'note',
@@ -211,8 +211,9 @@ export function renderDiagnostics(
       : '';
   }
 
+  // The pipeline keeps details for at most MAX_PRINTED_DIAGNOSTICS lines.
   const shown = diagnostics.slice(0, MAX_PRINTED_DIAGNOSTICS);
-  const hidden = diagnostics.length - shown.length;
+  const hidden = skippedCount - shown.length;
   let output = shown
     .map((diagnostic) =>
       renderDiagnostic(diagnostic, 'warning', palette, layout),
@@ -227,7 +228,7 @@ export function renderDiagnostics(
 
   output += renderMessage(
     'note',
-    `skipped ${plural(diagnostics.length, 'invalid line')}; use --strict to fail instead`,
+    `skipped ${plural(skippedCount, 'invalid line')}; use --strict to fail instead`,
     palette,
   );
   if (commandCount === 0) {

@@ -1,4 +1,8 @@
-import { BYTE_ORDER_MARK, type SkipReason } from '../constants.ts';
+import {
+  BYTE_ORDER_MARK,
+  MAX_PRINTED_DIAGNOSTICS,
+  type SkipReason,
+} from '../constants.ts';
 import type { Command } from '../schemas/command.ts';
 import { rankRelationships, type CompanyRelationships } from './analyze.ts';
 import { Network, type NameReference, type NetworkCounts } from './network.ts';
@@ -25,7 +29,16 @@ export interface PipelineOptions {
 
 export interface PipelineResult {
   report: CompanyRelationships[];
+  /**
+   * The first MAX_PRINTED_DIAGNOSTICS skipped lines, in input order, with
+   * full details. Later ones are only counted, so memory stays flat however
+   * many lines are bad.
+   */
   diagnostics: Diagnostic[];
+  /** Every skipped line, including those past `diagnostics`. */
+  skippedCount: number;
+  /** Every skipped line, by reason. */
+  skippedByReason: Partial<Record<SkipReason, number>>;
   /** Every line read, including blanks and comments. */
   lineCount: number;
   /** Blank and `#` comment lines. */
@@ -69,10 +82,21 @@ export async function analyzeLines(
 ): Promise<PipelineResult> {
   const network = new Network();
   const diagnostics: Diagnostic[] = [];
+  const skippedByReason: Partial<Record<SkipReason, number>> = {};
   const waitingForDeclaration = new Map<string, Diagnostic[]>();
+  let skippedCount = 0;
   let commandCount = 0;
   let ignoredLineCount = 0;
   let lineNumber = 0;
+
+  // Only the first MAX_PRINTED_DIAGNOSTICS problems are ever printed, so only
+  // they keep their details (and get the slower "did you mean" lookups).
+  const keepsDetails = (): boolean =>
+    diagnostics.length < MAX_PRINTED_DIAGNOSTICS;
+  const countSkip = (reason: SkipReason): void => {
+    skippedCount += 1;
+    skippedByReason[reason] = (skippedByReason[reason] ?? 0) + 1;
+  };
 
   for await (const rawLine of lines) {
     lineNumber += 1;
@@ -83,20 +107,23 @@ export async function analyzeLines(
     }
 
     if (parsed.status === 'error') {
-      diagnostics.push({
-        line: lineNumber,
-        text: cleanLine(rawLine),
-        message: parsed.message,
-        reason: parsed.reason,
-        words: parsed.words,
-        notes: [],
-      });
+      if (keepsDetails()) {
+        diagnostics.push({
+          line: lineNumber,
+          text: cleanLine(rawLine),
+          message: parsed.message,
+          reason: parsed.reason,
+          words: parsed.words,
+          notes: [],
+        });
+      }
+      countSkip(parsed.reason);
       if (strict) break;
       continue;
     }
 
     const { command } = parsed;
-    const problem = network.apply(command);
+    const problem = network.apply(command, { suggestNames: keepsDetails() });
 
     if (problem === undefined) {
       commandCount += 1;
@@ -113,31 +140,36 @@ export async function analyzeLines(
       continue;
     }
 
-    const diagnostic: Diagnostic = {
-      line: lineNumber,
-      text: cleanLine(rawLine),
-      message: problem.message,
-      reason: problem.reason,
-      words: problem.fields
-        .map((field) => wordPositionOf(command.kind, field))
-        .filter((position) => position !== undefined),
-      notes: [],
-    };
-    diagnostics.push(diagnostic);
-    if (strict) break;
+    if (keepsDetails()) {
+      const diagnostic: Diagnostic = {
+        line: lineNumber,
+        text: cleanLine(rawLine),
+        message: problem.message,
+        reason: problem.reason,
+        words: problem.fields
+          .map((field) => wordPositionOf(command.kind, field))
+          .filter((position) => position !== undefined),
+        notes: [],
+      };
+      diagnostics.push(diagnostic);
 
-    for (const reference of problem.undeclared) {
-      const key = referenceKey(reference);
-      const waiting = waitingForDeclaration.get(key) ?? [];
-      waiting.push(diagnostic);
-      waitingForDeclaration.set(key, waiting);
+      for (const reference of problem.undeclared) {
+        const key = referenceKey(reference);
+        const waiting = waitingForDeclaration.get(key) ?? [];
+        waiting.push(diagnostic);
+        waitingForDeclaration.set(key, waiting);
+      }
     }
+    countSkip(problem.reason);
+    if (strict) break;
   }
 
-  const aborted = strict && diagnostics.length > 0;
+  const aborted = strict && skippedCount > 0;
   return {
     report: aborted ? [] : rankRelationships(network),
     diagnostics,
+    skippedCount,
+    skippedByReason,
     lineCount: lineNumber,
     ignoredLineCount,
     commandCount,

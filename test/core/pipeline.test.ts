@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MAX_PRINTED_DIAGNOSTICS } from '../../src/constants.ts';
 import { analyzeLines } from '../../src/core/pipeline.ts';
 
 const lines = [
@@ -109,6 +110,36 @@ describe('analyzeLines', () => {
     expect(result.diagnostics[0]?.text).toBe('Bogus line');
   });
 
+  it('keeps details for the first few problems and counts the rest', async () => {
+    const bad = Array.from(
+      { length: MAX_PRINTED_DIAGNOSTICS + 30 },
+      (_, index) => (index % 2 === 0 ? 'Bogus line' : 'Partner'),
+    );
+    const result = await analyzeLines(['Company ACME', ...bad]);
+    expect(result.diagnostics).toHaveLength(MAX_PRINTED_DIAGNOSTICS);
+    expect(result.skippedCount).toBe(MAX_PRINTED_DIAGNOSTICS + 30);
+    expect(result.skippedByReason).toEqual({
+      unknownCommand: (MAX_PRINTED_DIAGNOSTICS + 30) / 2,
+      wrongWordCount: (MAX_PRINTED_DIAGNOSTICS + 30) / 2,
+    });
+    expect(result.report).toEqual([{ company: 'ACME', partners: [] }]);
+  });
+
+  it('skips name suggestions once details are no longer kept', async () => {
+    const input = [
+      'Partner Chris',
+      'Company ACME',
+      'Employee Laurie ACME',
+      ...Array.from({ length: MAX_PRINTED_DIAGNOSTICS }, () => 'Bogus line'),
+      'Contact Lauri Chris call',
+    ];
+    const result = await analyzeLines(input);
+    expect(result.skippedByReason.undeclaredName).toBe(1);
+    expect(
+      result.diagnostics.some(({ message }) => message.includes('Lauri')),
+    ).toBe(false);
+  });
+
   it('accepts an async iterable of lines', async () => {
     const result = await analyzeLines(stream());
     expect(result.report.map(({ company }) => company)).toEqual([
@@ -121,6 +152,8 @@ describe('analyzeLines', () => {
     expect(await analyzeLines([])).toEqual({
       report: [],
       diagnostics: [],
+      skippedCount: 0,
+      skippedByReason: {},
       lineCount: 0,
       ignoredLineCount: 0,
       commandCount: 0,

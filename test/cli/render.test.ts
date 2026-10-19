@@ -27,6 +27,8 @@ const diagnostic: Diagnostic = {
 const resultWith = (overrides: Partial<PipelineResult>): PipelineResult => ({
   report: [{ company: 'ACME', partners: [] }],
   diagnostics: [],
+  skippedCount: 0,
+  skippedByReason: {},
   lineCount: 1,
   ignoredLineCount: 0,
   commandCount: 1,
@@ -40,6 +42,16 @@ const resultWith = (overrides: Partial<PipelineResult>): PipelineResult => ({
   aborted: false,
   ...overrides,
 });
+
+/** As the pipeline reports it: details for the first few, a count for all. */
+const manySkipped = (skippedCount: number) =>
+  resultWith({
+    diagnostics: Array.from(
+      { length: Math.min(skippedCount, MAX_PRINTED_DIAGNOSTICS) },
+      (_, index) => ({ ...diagnostic, line: index + 1 }),
+    ),
+    skippedCount,
+  });
 
 describe('renderDiagnostic', () => {
   it('shows the message and the offending line', () => {
@@ -125,16 +137,18 @@ describe('renderDiagnostics', () => {
 
   it('lists warnings and suggests --strict', () => {
     expect(
-      renderDiagnostics(resultWith({ diagnostics: [diagnostic] }), plain),
+      renderDiagnostics(
+        resultWith({ diagnostics: [diagnostic], skippedCount: 1 }),
+        plain,
+      ),
     ).toMatch(/note: skipped 1 invalid line; use --strict to fail instead\n$/);
   });
 
   it('caps the number of warnings and summarizes the rest', () => {
-    const diagnostics = Array.from(
-      { length: MAX_PRINTED_DIAGNOSTICS + 1205 },
-      (_, index) => ({ ...diagnostic, line: index + 1 }),
+    const output = renderDiagnostics(
+      manySkipped(MAX_PRINTED_DIAGNOSTICS + 1205),
+      plain,
     );
-    const output = renderDiagnostics(resultWith({ diagnostics }), plain);
     expect(output.match(/^warning:/gm)).toHaveLength(MAX_PRINTED_DIAGNOSTICS);
     expect(output).toContain('\n…and 1,205 more warnings\n');
     expect(output).toContain(
@@ -143,24 +157,23 @@ describe('renderDiagnostics', () => {
   });
 
   it('never dims the "more warnings" line, and uses ASCII when plain', () => {
-    const diagnostics = Array.from(
-      { length: MAX_PRINTED_DIAGNOSTICS + 1 },
-      (_, index) => ({ ...diagnostic, line: index + 1 }),
-    );
-    const colored = renderDiagnostics(
-      resultWith({ diagnostics }),
-      createPalette(true),
-    );
+    const result = manySkipped(MAX_PRINTED_DIAGNOSTICS + 1);
+    const colored = renderDiagnostics(result, createPalette(true));
     expect(colored).toMatch(/\n…and 1 more warning\n/);
-    expect(
-      renderDiagnostics(resultWith({ diagnostics }), plain, 'plain'),
-    ).toContain('\n...and 1 more warning\n');
+    expect(renderDiagnostics(result, plain, 'plain')).toContain(
+      '\n...and 1 more warning\n',
+    );
   });
 
   it('asks whether it is the right file when nothing was valid', () => {
     expect(
       renderDiagnostics(
-        resultWith({ diagnostics: [diagnostic], commandCount: 0, report: [] }),
+        resultWith({
+          diagnostics: [diagnostic],
+          skippedCount: 1,
+          commandCount: 0,
+          report: [],
+        }),
         plain,
       ),
     ).toContain('Is this the right file?');
@@ -169,7 +182,12 @@ describe('renderDiagnostics', () => {
   it('shows an error and where it stopped in strict mode', () => {
     expect(
       renderDiagnostics(
-        resultWith({ diagnostics: [diagnostic], aborted: true, report: [] }),
+        resultWith({
+          diagnostics: [diagnostic],
+          skippedCount: 1,
+          aborted: true,
+          report: [],
+        }),
         plain,
       ),
     ).toBe(

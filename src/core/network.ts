@@ -39,6 +39,15 @@ export interface NetworkCounts {
   contactsByType: Record<ContactType, number>;
 }
 
+export interface ApplyOptions {
+  /**
+   * Look up "did you mean" suggestions for undeclared names. Each lookup
+   * compares against every declared name of that kind, so callers turn this
+   * off for problems nobody will see. Defaults to true.
+   */
+  suggestNames?: boolean;
+}
+
 /**
  * Everything Herbie knows about Drive's network, reduced to what the report
  * needs: who exists, where each employee works, and how many contacts each
@@ -59,16 +68,19 @@ export class Network {
    * refers to something that hasn't been declared or contradicts an earlier
    * declaration; in that case the network is left unchanged.
    */
-  apply(command: Command): Problem | undefined {
+  apply(
+    command: Command,
+    { suggestNames = true }: ApplyOptions = {},
+  ): Problem | undefined {
     switch (command.kind) {
       case 'partner':
         return this.#addPartner(command);
       case 'company':
         return this.#addCompany(command);
       case 'employee':
-        return this.#addEmployee(command);
+        return this.#addEmployee(command, suggestNames);
       case 'contact':
-        return this.#addContact(command);
+        return this.#addContact(command, suggestNames);
     }
   }
 
@@ -103,9 +115,14 @@ export class Network {
     this.#companies.add(name);
   }
 
-  #addEmployee({ name, company }: EmployeeCommand): Problem | undefined {
+  #addEmployee(
+    { name, company }: EmployeeCommand,
+    suggestNames: boolean,
+  ): Problem | undefined {
     if (!this.#companies.has(company)) {
-      const hint = didYouMean(suggest(company, this.#companies));
+      const hint = suggestNames
+        ? didYouMean(suggest(company, this.#companies))
+        : '';
       return {
         message: `employee "${name}" works at company "${company}", which hasn't been declared${hint}`,
         reason: 'undeclaredName',
@@ -128,11 +145,10 @@ export class Network {
     return undefined;
   }
 
-  #addContact({
-    employee,
-    partner,
-    type,
-  }: ContactCommand): Problem | undefined {
+  #addContact(
+    { employee, partner, type }: ContactCommand,
+    suggestNames: boolean,
+  ): Problem | undefined {
     const company = this.#employeeCompany.get(employee);
     const partnerIsDeclared = this.#partners.has(partner);
 
@@ -159,13 +175,17 @@ export class Network {
     const undeclared: NameReference[] = [];
 
     if (company === undefined) {
-      const hint = didYouMean(suggest(employee, this.#employeeCompany.keys()));
+      const hint = suggestNames
+        ? didYouMean(suggest(employee, this.#employeeCompany.keys()))
+        : '';
       reasons.push(`employee "${employee}" hasn't been declared${hint}`);
       fields.push('employee');
       undeclared.push({ kind: 'employee', name: employee });
     }
     if (!partnerIsDeclared) {
-      const hint = didYouMean(suggest(partner, this.#partners));
+      const hint = suggestNames
+        ? didYouMean(suggest(partner, this.#partners))
+        : '';
       reasons.push(`partner "${partner}" hasn't been declared${hint}`);
       fields.push('partner');
       undeclared.push({ kind: 'partner', name: partner });

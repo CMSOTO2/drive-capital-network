@@ -87,3 +87,5 @@ export const SKIP_REASONS = {
 } as const;
 
 export type SkipReason = keyof typeof SKIP_REASONS;
+
+export const SKIP_REASON_CODES = Object.keys(SKIP_REASONS) as SkipReason[];
