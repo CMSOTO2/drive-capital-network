@@ -49,6 +49,8 @@ Scopes name the area changed: a module (`parse`, `network`, `report`, `stats`, `
 - **Erasable TypeScript only** (no enums or namespaces), so `pnpm dev` can run the source directly. Relative imports use `.ts` extensions.
 - **Tests mirror `src/`.** New behavior needs a test. If you change output, update the `examples/*.expected.txt` golden files on purpose, not just to make tests pass. To cover a new case, add `examples/scenarios/<name>.txt` and a hand-written `<name>.expected.txt`; the scenario test picks it up automatically.
 
+For anything that touches per-line work, run the stress comparison on a big input (`pnpm -s stress --contacts 1000000 --out /tmp/stress`, see the README) and check time and memory before and after.
+
 Formatting (oxfmt) and lint fixes (oxlint) are applied automatically on commit. Don't bypass the hooks with `--no-verify`.
 
 ## Docs stay with the code

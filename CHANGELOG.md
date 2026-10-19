@@ -17,5 +17,6 @@ All notable changes to this project are documented here. The format follows [Kee
 - Supports Node 22.18+ as well as 24; CI tests both.
 - `--stats` / `-s`: a summary on stderr of everything declared, contacts by type, and skipped lines by reason (JSON with `--format json`).
 - `--plain`: screen-reader-friendly diagnostics with no color, decoration, or non-ASCII characters; automatic when `TERM=dumb`.
+- `pnpm -s stress`: generates long, messy inputs with the output they must produce, for differential and performance testing. A million contacts run in about 2 seconds.
 - Example inputs with expected output: the prompt's example, an edge-case file, and 30 scenarios in `examples/scenarios/` covering happy paths, mistakes, and awkward files.
 - Tooling: TypeScript 7, Vitest, oxlint, oxfmt, husky + lint-staged pre-commit hook, commitlint, and GitHub Actions CI.

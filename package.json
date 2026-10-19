@@ -18,7 +18,8 @@
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "stress": "node scripts/stress.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"
