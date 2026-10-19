@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseLine } from '../../src/core/parse.ts';
+import { parseLine, wordPositionOf } from '../../src/core/parse.ts';
 
 const errorOf = (line: string): string => {
   const result = parseLine(line);
@@ -8,6 +8,11 @@ const errorOf = (line: string): string => {
     throw new Error(`expected an error for ${JSON.stringify(line)}`);
   }
   return result.message;
+};
+
+const wordsOf = (line: string): number[] => {
+  const result = parseLine(line);
+  return result.status === 'error' ? result.words : [];
 };
 
 describe('parseLine', () => {
@@ -77,6 +82,24 @@ describe('parseLine', () => {
       expect(parseLine('# input.txt - NOTE: demonstration only')).toEqual({
         status: 'skip',
       });
+    });
+  });
+
+  describe('word positions of errors', () => {
+    it('points at the keyword when it is unknown', () => {
+      expect(wordsOf('Investor Chris')).toEqual([0]);
+    });
+
+    it('points at the keyword when words are missing', () => {
+      expect(wordsOf('Contact Laurie Chris')).toEqual([0]);
+    });
+
+    it('points at the extra words when there are too many', () => {
+      expect(wordsOf('Partner Chris Van Dyke')).toEqual([2, 3]);
+    });
+
+    it('points at every invalid field', () => {
+      expect(wordsOf('Contact L4urie Chris text')).toEqual([1, 3]);
     });
   });
 
@@ -161,5 +184,17 @@ describe('parseLine', () => {
       expect(errorOf('constructor Chris')).toMatch(/^unknown command/);
       expect(errorOf('__proto__ Chris')).toMatch(/^unknown command/);
     });
+  });
+});
+
+describe('wordPositionOf', () => {
+  it('finds where a field sits on its line', () => {
+    expect(wordPositionOf('contact', 'employee')).toBe(1);
+    expect(wordPositionOf('contact', 'type')).toBe(3);
+    expect(wordPositionOf('employee', 'company')).toBe(2);
+  });
+
+  it('returns undefined for a field the command does not have', () => {
+    expect(wordPositionOf('partner', 'company')).toBeUndefined();
   });
 });

@@ -1,3 +1,4 @@
+import type { CommandKind } from '../constants.ts';
 import type {
   Command,
   CompanyCommand,
@@ -6,6 +7,21 @@ import type {
   PartnerCommand,
 } from '../schemas/command.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
+
+/** A name of a partner, company, or employee that a command refers to. */
+export interface NameReference {
+  kind: Exclude<CommandKind, 'contact'>;
+  name: string;
+}
+
+/** Why a command couldn't be applied. The network is left unchanged. */
+export interface Problem {
+  message: string;
+  /** The command fields at fault (e.g. `partner`), so the CLI can point at them. */
+  fields: string[];
+  /** Names that weren't declared yet; a later declaration can explain them. */
+  undeclared: NameReference[];
+}
 
 /**
  * Everything Herbie knows about Drive's network, reduced to what the report
@@ -22,11 +38,11 @@ export class Network {
   readonly #strength = new Map<string, Map<string, number>>();
 
   /**
-   * Applies one command in input order. Returns a warning when the command
+   * Applies one command in input order. Returns a problem when the command
    * refers to something that hasn't been declared or contradicts an earlier
    * declaration; in that case the network is left unchanged.
    */
-  apply(command: Command): string | undefined {
+  apply(command: Command): Problem | undefined {
     switch (command.kind) {
       case 'partner':
         return this.#addPartner(command);
@@ -57,47 +73,84 @@ export class Network {
     this.#companies.add(name);
   }
 
-  #addEmployee({ name, company }: EmployeeCommand): string | undefined {
+  #addEmployee({ name, company }: EmployeeCommand): Problem | undefined {
     if (!this.#companies.has(company)) {
-      return `employee "${name}" works at company "${company}", which hasn't been declared${didYouMean(suggest(company, this.#companies))}`;
+      const hint = didYouMean(suggest(company, this.#companies));
+      return {
+        message: `employee "${name}" works at company "${company}", which hasn't been declared${hint}`,
+        fields: ['company'],
+        undeclared: [{ kind: 'company', name: company }],
+      };
     }
-    const current = this.#employeeCompany.get(name);
-    if (current !== undefined && current !== company) {
-      return `employee "${name}" is already declared at "${current}"; employee names are unique, so "${company}" is ignored`;
+
+    const currentCompany = this.#employeeCompany.get(name);
+    if (currentCompany !== undefined && currentCompany !== company) {
+      return {
+        message: `employee "${name}" is already declared at "${currentCompany}"; employee names are unique, so "${company}" is ignored`,
+        fields: ['company'],
+        undeclared: [],
+      };
     }
+
     this.#employeeCompany.set(name, company);
     return undefined;
   }
 
-  #addContact({ employee, partner, type }: ContactCommand): string | undefined {
+  #addContact({
+    employee,
+    partner,
+    type,
+  }: ContactCommand): Problem | undefined {
     const company = this.#employeeCompany.get(employee);
-    const knownPartner = this.#partners.has(partner);
+    const partnerIsDeclared = this.#partners.has(partner);
 
-    if (
-      company === undefined &&
-      !knownPartner &&
-      this.#partners.has(employee) &&
-      this.#employeeCompany.has(partner)
-    ) {
-      return `contact skipped: "${employee}" is a partner and "${partner}" is an employee; the order is Contact ${partner} ${employee} ${type}`;
+    if (company !== undefined && partnerIsDeclared) {
+      this.#countContact(company, partner);
+      return undefined;
     }
 
-    const problems = [
-      company === undefined &&
-        `employee "${employee}" hasn't been declared${didYouMean(suggest(employee, this.#employeeCompany.keys()))}`,
-      !knownPartner &&
-        `partner "${partner}" hasn't been declared${didYouMean(suggest(partner, this.#partners))}`,
-    ].filter((problem) => problem !== false);
-    if (company === undefined || problems.length > 0) {
-      return `contact skipped: ${problems.join(' and ')}`;
+    // `Contact Chris Laurie` where Chris is a partner and Laurie an employee:
+    // the line would be valid with the two names the other way round.
+    const namesAreSwapped =
+      this.#partners.has(employee) && this.#employeeCompany.has(partner);
+    if (namesAreSwapped) {
+      return {
+        message: `contact skipped: "${employee}" is a partner and "${partner}" is an employee; the order is Contact ${partner} ${employee} ${type}`,
+        fields: ['employee', 'partner'],
+        undeclared: [],
+      };
     }
 
+    const reasons: string[] = [];
+    const fields: string[] = [];
+    const undeclared: NameReference[] = [];
+
+    if (company === undefined) {
+      const hint = didYouMean(suggest(employee, this.#employeeCompany.keys()));
+      reasons.push(`employee "${employee}" hasn't been declared${hint}`);
+      fields.push('employee');
+      undeclared.push({ kind: 'employee', name: employee });
+    }
+    if (!partnerIsDeclared) {
+      const hint = didYouMean(suggest(partner, this.#partners));
+      reasons.push(`partner "${partner}" hasn't been declared${hint}`);
+      fields.push('partner');
+      undeclared.push({ kind: 'partner', name: partner });
+    }
+
+    return {
+      message: `contact skipped: ${reasons.join(' and ')}`,
+      fields,
+      undeclared,
+    };
+  }
+
+  #countContact(company: string, partner: string): void {
     let counts = this.#strength.get(company);
     if (counts === undefined) {
       counts = new Map();
       this.#strength.set(company, counts);
     }
     counts.set(partner, (counts.get(partner) ?? 0) + 1);
-    return undefined;
   }
 }

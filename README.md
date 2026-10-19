@@ -71,16 +71,20 @@ Input comes from `file`, or from STDIN when `file` is missing or `-`. The report
 
 ### Invalid input
 
-By default a bad line is reported and skipped, and the rest of the file is still analyzed. Each warning names the line and shows it, like a compiler error:
+By default a bad line is reported and skipped, and the rest of the file is still analyzed. Like a compiler error, each warning names the line, shows it, marks the words at fault, and suggests a fix where it can:
 
 ```console
 $ analyze-network examples/edge-cases.txt
-warning: line 11: employee "Sarah" is already declared at "ACME"; employee names are unique, so "Globex" is ignored
-  11 | Employee Sarah Globex
 warning: line 18: contact type "Coffee" is not valid (did you mean "coffee"?)
   18 | Contact Jamie Chris Coffee
-warning: line 19: contact skipped: employee "Ghost" hasn't been declared
-  19 | Contact Ghost Chris call
+     |                     ^^^^^^
+warning: line 20: contact skipped: partner "Rezzan" hasn't been declared
+  20 | Contact Peter Rezzan call
+     |               ^^^^^^
+     = note: "Rezzan" is declared later, on line 21; declarations must come before the lines that use them
+warning: line 27: contact skipped: "Chris" is a partner and "Sarah" is an employee; the order is Contact Sarah Chris call
+  27 | Contact Chris Sarah call
+     |         ^^^^^ ^^^^^
 …
 note: skipped 11 invalid lines; use --strict to fail instead
 ACME: Adam (1)
@@ -156,33 +160,33 @@ Each of these has a short decision record in [`docs/decisions/`](./docs/decision
 
 ## Assumptions and edge cases
 
-| Case                                                                            | Behavior                                                                                                                   |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Two partners tie for strongest                                                  | The alphabetically first partner wins. The prompt doesn't say; I picked a deterministic rule.                              |
-| Company sort order                                                              | Case-insensitive alphabetical, with an ordinal tiebreak. Matches the example (`ACME`, `Globex`, `Hooli`).                  |
-| Contact type other than `email`, `call`, `coffee`                               | Rejected with a warning ("should only accept" those three).                                                                |
-| Contact type weighting                                                          | None. Every contact counts as 1, since strength is the "total amount of Contacts".                                         |
-| Contact names an undeclared employee or partner                                 | Warning, line skipped. Commands are processed in order, so a contact can't refer forward to a later declaration.           |
-| Employee names an undeclared company                                            | Warning, line skipped. The prompt says this won't happen; the check is cheap.                                              |
-| Same partner or company declared twice                                          | Ignored, no warning.                                                                                                       |
-| Employee declared again at a different company                                  | Warning, first declaration kept (employee names are globally unique).                                                      |
-| Identical `Contact` lines repeated                                              | Each one counts. They're separate interactions.                                                                            |
-| Blank lines, Windows line endings, extra spaces or tabs                         | Tolerated.                                                                                                                 |
-| No newline at the end of the file                                               | Tolerated.                                                                                                                 |
-| Lines starting with `#`                                                         | Skipped as comments. The prompt says real input won't have them, but its example does, so pasting the example as-is works. |
-| UTF-8 byte order mark at the start of the file                                  | Stripped. Some Windows editors add one.                                                                                    |
-| Typo or wrong case in a keyword or contact type (`Contcat`, `partner`, `cofee`) | Rejected, since the prompt defines exact words, but the warning suggests the fix: `did you mean "Contact"?`                |
-| Undeclared name close to a declared one (`Lauri` vs `Laurie`)                   | Warning, line skipped, with `did you mean "Laurie"?`                                                                       |
-| Employee and partner swapped in a `Contact`                                     | Warning, line skipped, showing the corrected line                                                                          |
-| Unknown command, wrong number of words, non-letter characters                   | Warning, line skipped. The warning lists the valid commands or shows the expected usage.                                   |
-| Partner with no contacts                                                        | Never appears in the output.                                                                                               |
-| Same name used for a partner and an employee                                    | Allowed. Partners and employees are separate namespaces.                                                                   |
-| Empty input, or no companies declared                                           | Empty report, plus a note on stderr explaining why.                                                                        |
-| No line in the file is a valid command                                          | Warnings, plus a note asking whether it's the right file.                                                                  |
-| Thousands of invalid lines                                                      | The first 20 warnings are shown, then "…and N more", so a wrong file doesn't flood the terminal.                           |
-| Run with no file and nothing piped in                                           | Exits 2 with a usage hint instead of silently waiting for keyboard input.                                                  |
-| Output piped into a command that exits early (`\| head -1`)                     | Exits quietly with code 0 instead of printing a stack trace.                                                               |
-| Large input                                                                     | Streamed line by line. A 200,000-line file runs in about 0.3 seconds.                                                      |
+| Case                                                                            | Behavior                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Two partners tie for strongest                                                  | The alphabetically first partner wins. The prompt doesn't say; I picked a deterministic rule.                                                                                                                               |
+| Company sort order                                                              | Case-insensitive alphabetical, with an ordinal tiebreak. Matches the example (`ACME`, `Globex`, `Hooli`).                                                                                                                   |
+| Contact type other than `email`, `call`, `coffee`                               | Rejected with a warning ("should only accept" those three).                                                                                                                                                                 |
+| Contact type weighting                                                          | None. Every contact counts as 1, since strength is the "total amount of Contacts".                                                                                                                                          |
+| Contact names an undeclared employee or partner                                 | Warning, line skipped. Commands are processed in order, so a contact can't refer forward to a later declaration. If the name is declared further down, the warning says on which line, since moving it up is the usual fix. |
+| Employee names an undeclared company                                            | Warning, line skipped. The prompt says this won't happen; the check is cheap.                                                                                                                                               |
+| Same partner or company declared twice                                          | Ignored, no warning.                                                                                                                                                                                                        |
+| Employee declared again at a different company                                  | Warning, first declaration kept (employee names are globally unique).                                                                                                                                                       |
+| Identical `Contact` lines repeated                                              | Each one counts. They're separate interactions.                                                                                                                                                                             |
+| Blank lines, Windows line endings, extra spaces or tabs                         | Tolerated.                                                                                                                                                                                                                  |
+| No newline at the end of the file                                               | Tolerated.                                                                                                                                                                                                                  |
+| Lines starting with `#`                                                         | Skipped as comments. The prompt says real input won't have them, but its example does, so pasting the example as-is works.                                                                                                  |
+| UTF-8 byte order mark at the start of the file                                  | Stripped. Some Windows editors add one.                                                                                                                                                                                     |
+| Typo or wrong case in a keyword or contact type (`Contcat`, `partner`, `cofee`) | Rejected, since the prompt defines exact words, but the warning suggests the fix: `did you mean "Contact"?`                                                                                                                 |
+| Undeclared name close to a declared one (`Lauri` vs `Laurie`)                   | Warning, line skipped, with `did you mean "Laurie"?`                                                                                                                                                                        |
+| Employee and partner swapped in a `Contact`                                     | Warning, line skipped, showing the corrected line                                                                                                                                                                           |
+| Unknown command, wrong number of words, non-letter characters                   | Warning, line skipped. The warning lists the valid commands or shows the expected usage.                                                                                                                                    |
+| Partner with no contacts                                                        | Never appears in the output.                                                                                                                                                                                                |
+| Same name used for a partner and an employee                                    | Allowed. Partners and employees are separate namespaces.                                                                                                                                                                    |
+| Empty input, or no companies declared                                           | Empty report, plus a note on stderr explaining why.                                                                                                                                                                         |
+| No line in the file is a valid command                                          | Warnings, plus a note asking whether it's the right file.                                                                                                                                                                   |
+| Thousands of invalid lines                                                      | The first 20 warnings are shown, then "…and N more", so a wrong file doesn't flood the terminal.                                                                                                                            |
+| Run with no file and nothing piped in                                           | Exits 2 with a usage hint instead of silently waiting for keyboard input.                                                                                                                                                   |
+| Output piped into a command that exits early (`\| head -1`)                     | Exits quietly with code 0 instead of printing a stack trace.                                                                                                                                                                |
+| Large input                                                                     | Streamed line by line. A 200,000-line file runs in about 0.3 seconds.                                                                                                                                                       |
 
 ## How I used LLMs
 

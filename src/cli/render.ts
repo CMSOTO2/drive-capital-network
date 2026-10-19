@@ -53,24 +53,60 @@ export function renderMessage(
 }
 
 /**
+ * A row of `^` under the given words, e.g. `            ^^^^` for word 2 of
+ * `Contact Laurie Chris text`. Tabs are shown as single spaces so the markers
+ * line up.
+ */
+export function underlineWords(text: string, words: readonly number[]): string {
+  const spans = [...text.matchAll(/\S+/g)].map((match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+
+  let underline = '';
+  for (const position of [...new Set(words)].toSorted((a, b) => a - b)) {
+    const span = spans[position];
+    if (span === undefined) continue;
+    underline += ' '.repeat(span.start - underline.length);
+    underline += '^'.repeat(span.end - span.start);
+  }
+  return underline;
+}
+
+/**
  * One problem, compiler style:
  *
- *   warning: line 3: contact type "text" is not one of email, call, or coffee
- *     3 | Contact Laurie Chris text
+ *   warning: line 20: contact skipped: partner "Rezzan" hasn't been declared
+ *     20 | Contact Peter Rezzan call
+ *        |               ^^^^^^
+ *        = note: "Rezzan" is declared later, on line 21; …
  */
 export function renderDiagnostic(
   diagnostic: Diagnostic,
   severity: 'error' | 'warning',
   palette: Palette,
 ): string {
-  const gutter = palette.paint('dim', `  ${diagnostic.line} | `);
-  return (
-    renderMessage(
-      severity,
-      `line ${diagnostic.line}: ${diagnostic.message}`,
-      palette,
-    ) + `${gutter}${diagnostic.text}\n`
+  const lineNumber = String(diagnostic.line);
+  const blankGutter = ' '.repeat(lineNumber.length);
+  const shownText = diagnostic.text.replaceAll('\t', ' ');
+
+  let output = renderMessage(
+    severity,
+    `line ${lineNumber}: ${diagnostic.message}`,
+    palette,
   );
+  output += `${palette.paint('dim', `  ${lineNumber} | `)}${shownText}\n`;
+
+  const underline = underlineWords(shownText, diagnostic.words);
+  if (underline !== '') {
+    const marker = palette.paint(SEVERITY_COLORS[severity], underline);
+    output += `${palette.paint('dim', `  ${blankGutter} | `)}${marker}\n`;
+  }
+
+  for (const note of diagnostic.notes) {
+    output += `  ${blankGutter} ${palette.paint('dim', '=')} ${palette.paint('bold', 'note:')} ${note}\n`;
+  }
+  return output;
 }
 
 /** Everything the CLI writes to stderr about the input itself. */

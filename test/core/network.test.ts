@@ -57,7 +57,7 @@ describe('Network', () => {
     });
 
     it('rejects an employee at an undeclared company', () => {
-      expect(network.apply(employee('Sarah', 'Initech'))).toBe(
+      expect(network.apply(employee('Sarah', 'Initech'))?.message).toBe(
         'employee "Sarah" works at company "Initech", which hasn\'t been declared',
       );
     });
@@ -69,7 +69,7 @@ describe('Network', () => {
         company('ACME'),
         employee('Sarah', 'Hooli'),
       ]);
-      expect(network.apply(employee('Sarah', 'ACME'))).toBe(
+      expect(network.apply(employee('Sarah', 'ACME'))?.message).toBe(
         'employee "Sarah" is already declared at "Hooli"; employee names are unique, so "ACME" is ignored',
       );
 
@@ -80,7 +80,7 @@ describe('Network', () => {
 
     it('suggests a declared company with a similar name', () => {
       network.apply(company('ACME'));
-      expect(network.apply(employee('Sam', 'Acmee'))).toBe(
+      expect(network.apply(employee('Sam', 'Acmee'))?.message).toBe(
         'employee "Sam" works at company "Acmee", which hasn\'t been declared (did you mean "ACME"?)',
       );
     });
@@ -134,32 +134,32 @@ describe('Network', () => {
     });
 
     it('skips a contact with an undeclared employee', () => {
-      expect(network.apply(contact('Ollie', 'Chris'))).toBe(
+      expect(network.apply(contact('Ollie', 'Chris'))?.message).toBe(
         'contact skipped: employee "Ollie" hasn\'t been declared',
       );
     });
 
     it('skips a contact with an undeclared partner', () => {
-      expect(network.apply(contact('Laurie', 'Masha'))).toBe(
+      expect(network.apply(contact('Laurie', 'Masha'))?.message).toBe(
         'contact skipped: partner "Masha" hasn\'t been declared',
       );
       expect(strengths(network, 'Globex')).toEqual({});
     });
 
     it('suggests a declared employee or partner with a similar name', () => {
-      expect(network.apply(contact('Lauri', 'Chriss'))).toBe(
+      expect(network.apply(contact('Lauri', 'Chriss'))?.message).toBe(
         'contact skipped: employee "Lauri" hasn\'t been declared (did you mean "Laurie"?) and partner "Chriss" hasn\'t been declared (did you mean "Chris"?)',
       );
     });
 
     it('spots an employee and partner given in the wrong order', () => {
-      expect(network.apply(contact('Chris', 'Laurie', 'call'))).toBe(
+      expect(network.apply(contact('Chris', 'Laurie', 'call'))?.message).toBe(
         'contact skipped: "Chris" is a partner and "Laurie" is an employee; the order is Contact Laurie Chris call',
       );
     });
 
     it('names both problems when employee and partner are undeclared', () => {
-      expect(network.apply(contact('Ollie', 'Masha'))).toBe(
+      expect(network.apply(contact('Ollie', 'Masha'))?.message).toBe(
         'contact skipped: employee "Ollie" hasn\'t been declared and partner "Masha" hasn\'t been declared',
       );
     });
@@ -168,6 +168,37 @@ describe('Network', () => {
       expect(network.apply(contact('Laurie', 'Rezzan'))).toBeDefined();
       network.apply(partner('Rezzan'));
       expect(strengths(network, 'Globex')).toEqual({});
+    });
+  });
+
+  describe('problem details', () => {
+    beforeEach(() => {
+      applyAll([partner('Chris'), company('ACME'), employee('Sam', 'ACME')]);
+    });
+
+    it('names the fields at fault and the undeclared names', () => {
+      expect(network.apply(contact('Ghost', 'Masha'))).toMatchObject({
+        fields: ['employee', 'partner'],
+        undeclared: [
+          { kind: 'employee', name: 'Ghost' },
+          { kind: 'partner', name: 'Masha' },
+        ],
+      });
+    });
+
+    it('reports an undeclared company on an employee', () => {
+      expect(network.apply(employee('Ann', 'Initech'))).toMatchObject({
+        fields: ['company'],
+        undeclared: [{ kind: 'company', name: 'Initech' }],
+      });
+    });
+
+    it('has nothing undeclared for a redeclared employee', () => {
+      network.apply(company('Hooli'));
+      expect(network.apply(employee('Sam', 'Hooli'))).toMatchObject({
+        fields: ['company'],
+        undeclared: [],
+      });
     });
   });
 

@@ -8,8 +8,8 @@ export function networkFrom(lines: readonly string[]): Network {
     const parsed = parseLine(line);
     if (parsed.status === 'error') throw new Error(parsed.message);
     if (parsed.status === 'skip') continue;
-    const warning = network.apply(parsed.command);
-    if (warning) throw new Error(warning);
+    const problem = network.apply(parsed.command);
+    if (problem) throw new Error(problem.message);
   }
   return network;
 }

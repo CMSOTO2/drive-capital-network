@@ -55,8 +55,8 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 - [x] "Did you mean" suggestions for typos in keywords, contact types, and employee, partner, and company names
 - [x] Hint when a `Contact` lists the partner before the employee
-- [ ] Mark the offending word under the echoed line
-- [ ] Point to a later declaration when a contact refers to a name declared further down
+- [x] Mark the offending word under the echoed line
+- [x] Point to a later declaration when a line refers to a name declared further down
 - [ ] `--company <name>` to report on specific companies
 - [ ] `--details` to show every partner's strength in text output
 

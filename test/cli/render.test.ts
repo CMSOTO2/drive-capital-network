@@ -7,6 +7,7 @@ import {
   renderDiagnostic,
   renderDiagnostics,
   shouldUseColor,
+  underlineWords,
 } from '../../src/cli/render.ts';
 import { MAX_PRINTED_DIAGNOSTICS } from '../../src/constants.ts';
 import type { Diagnostic, PipelineResult } from '../../src/core/pipeline.ts';
@@ -16,6 +17,8 @@ const diagnostic: Diagnostic = {
   line: 3,
   text: 'Contact Laurie Chris text',
   message: 'contact type "text" is not one of email, call, or coffee',
+  words: [3],
+  notes: [],
 };
 const resultWith = (overrides: Partial<PipelineResult>): PipelineResult => ({
   report: [{ company: 'ACME', partners: [] }],
@@ -29,8 +32,35 @@ describe('renderDiagnostic', () => {
   it('shows the message and the offending line', () => {
     expect(renderDiagnostic(diagnostic, 'warning', plain)).toBe(
       'warning: line 3: contact type "text" is not one of email, call, or coffee\n' +
-        '  3 | Contact Laurie Chris text\n',
+        '  3 | Contact Laurie Chris text\n' +
+        '    |                      ^^^^\n',
     );
+  });
+
+  it('pads the gutter to the width of the line number', () => {
+    const output = renderDiagnostic(
+      { ...diagnostic, line: 120, words: [1] },
+      'warning',
+      plain,
+    );
+    expect(output).toContain('  120 | Contact Laurie Chris text\n');
+    expect(output).toContain('      |         ^^^^^^\n');
+  });
+
+  it('leaves out the marker row when no word is at fault', () => {
+    expect(
+      renderDiagnostic({ ...diagnostic, words: [] }, 'warning', plain),
+    ).not.toContain('^');
+  });
+
+  it('adds notes below the line', () => {
+    expect(
+      renderDiagnostic(
+        { ...diagnostic, notes: ['"Rezzan" is declared later, on line 21'] },
+        'warning',
+        plain,
+      ),
+    ).toMatch(/\n {4}= note: "Rezzan" is declared later, on line 21\n$/);
   });
 
   it('adds ANSI colors only when enabled', () => {
@@ -90,6 +120,7 @@ describe('renderDiagnostics', () => {
     ).toBe(
       'error: line 3: contact type "text" is not one of email, call, or coffee\n' +
         '  3 | Contact Laurie Chris text\n' +
+        '    |                      ^^^^\n' +
         'note: stopped at line 3 because of --strict\n',
     );
   });
@@ -133,5 +164,27 @@ describe('shouldUseColor', () => {
     expect(shouldUseColor({ flag: undefined, isTTY: false, env: {} })).toBe(
       false,
     );
+  });
+});
+
+describe('underlineWords', () => {
+  const line = 'Contact Laurie Chris text';
+
+  it('marks one word', () => {
+    expect(underlineWords(line, [1])).toBe('        ^^^^^^');
+  });
+
+  it('marks several words, in any order, once each', () => {
+    expect(underlineWords(line, [3, 1, 3])).toBe('        ^^^^^^       ^^^^');
+  });
+
+  it('follows extra spaces between words', () => {
+    expect(underlineWords('  Partner   Chris2', [1])).toBe(
+      '            ^^^^^^',
+    );
+  });
+
+  it('ignores positions past the end of the line', () => {
+    expect(underlineWords('Company', [4])).toBe('');
   });
 });
