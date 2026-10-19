@@ -4,7 +4,7 @@ Drive Capital take-home: a TypeScript CLI that reports the strongest partner rel
 
 ## Docs stay in sync with the code
 
-README.md, ARCHITECTURE.md, and ROADMAP.md describe the code. After any change to `src/`, `test/`, scripts, or config, reread all three and fix whatever no longer matches (module table, data model, rules, edge-case table, run commands, roadmap checkboxes) **in the same commit**.
+README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md (under "Unreleased") describe the code. After any change to `src/`, `test/`, scripts, or config, reread all three and fix whatever no longer matches (module table, data model, rules, edge-case table, run commands, roadmap checkboxes) **in the same commit**. Significant design choices get a record in `docs/decisions/`. CONTRIBUTING.md is the human-facing version of these rules; keep the two consistent.
 
 ## Commits
 
