@@ -1,0 +1,11 @@
+Partner Chris
+Partner Chris2
+Partner Zoë
+Partner O'Brien
+Company ACME
+Company Acme-Co
+Company Big_Corp
+Employee Sam ACME
+Employee José ACME
+Contact Sam Chris call
+Contact Sam Zoë call

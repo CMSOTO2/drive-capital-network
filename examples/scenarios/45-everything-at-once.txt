@@ -1,0 +1,23 @@
+# Messy export from three sources
+Partner Chris
+Partner Molly
+partner Rezzan
+
+Company Globex
+Company ACME
+Company hooli
+Employee Laurie Globex
+Employee Abdi hooli
+Employee Jamie Globex
+Employee Laurie ACME
+Contact Laurie Chris email
+Contact Laurie Molly cal
+Contact Jamie Molly call
+Contact Jamie Molly coffee
+Contact Abdi Rezzan email
+Contact Chris Abdi call
+Contact Abdi Chris call
+Contact Abdi Chris call
+Partner Rezzan
+Contact Abdi Rezzan email
+Contact Jamie Chris coffee

@@ -15,6 +15,7 @@ Hooli: Molly (1)
 >
 > - **Run it:** `pnpm install`, then `./analyze_network examples/input.txt` (Node 22.18+, no build step). `pnpm test` runs the tests.
 > - **The core logic** is about 450 lines in [`src/core/`](./src/core/): [`parse.ts`](./src/core/parse.ts) → [`network.ts`](./src/core/network.ts) → [`analyze.ts`](./src/core/analyze.ts) → [`format.ts`](./src/core/format.ts). Everything else is the CLI around it.
+> - **30 ready-made inputs** (happy paths, mistakes, awkward files) are in [`examples/scenarios/`](./examples/scenarios/), each with its expected output.
 > - **Interpretations of the prompt** are in [Assumptions and edge cases](#assumptions-and-edge-cases), and the bigger design choices are in [`docs/decisions/`](./docs/decisions/).
 
 ## Contents
@@ -102,7 +103,7 @@ hooli: No current relationship
 Initech: No current relationship
 ```
 
-[`examples/edge-cases.txt`](./examples/edge-cases.txt) exercises the rules in the [edge-case table](#assumptions-and-edge-cases), and its expected output is in [`examples/edge-cases.expected.txt`](./examples/edge-cases.expected.txt).
+[`examples/edge-cases.txt`](./examples/edge-cases.txt) exercises the rules in the [edge-case table](#assumptions-and-edge-cases), and its expected output is in [`examples/edge-cases.expected.txt`](./examples/edge-cases.expected.txt). For one scenario per file, see [`examples/scenarios/`](./examples/scenarios/): 30 inputs covering happy paths, every kind of mistake, and awkward files (CRLF, byte order mark, tabs, no final newline), with a guide to what each shows.
 
 ### Asking about specific companies
 

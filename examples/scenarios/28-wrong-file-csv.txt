@@ -1,0 +1,3 @@
+partner,company,contact_type
+Chris,ACME,email
+Molly,Hooli,call

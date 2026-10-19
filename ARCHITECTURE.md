@@ -29,6 +29,7 @@ src/
 analyze_network         runs src/cli/main.ts from source, no build (Node type stripping)
 test/                   mirrors src/ (test/core/parse.test.ts, …), plus helpers/
 examples/               the prompt's example and an edge-case file, each with expected output
+└── scenarios/          30 small inputs (happy, unhappy, awkward), each with expected output
 docs/decisions/         architecture decision records
 ```
 
@@ -141,8 +142,9 @@ The stdout report never contains diagnostics or color codes, so `analyze-network
 | Unit            | `test/core/`, `test/schemas/`, `test/utils/`              | Each rule in isolation with plain values, including that `--stats` output never contains names                                                                                           |
 | CLI, in process | `test/cli/main.test.ts`, `args.test.ts`, `render.test.ts` | `main(io)` with fake streams: golden output for both examples, STDIN, CRLF, every exit code, formats, color, `--company`, `--details`, `--stats`, `--plain` and `TERM=dumb`, file errors |
 | End to end      | `test/cli/e2e.test.ts`                                    | `src/cli/bin.ts` and `./analyze_network` in a child process: real pipes and process exit codes                                                                                           |
+| Scenarios       | `test/cli/scenarios.test.ts`                              | Every `examples/scenarios/*.txt` against its `.expected.txt` (stdout and exit code). New scenarios are picked up automatically                                                           |
 
-The golden tests compare against `examples/*.expected.txt`, the same files a reviewer would use by hand.
+The golden tests compare against `examples/*.expected.txt` and `examples/scenarios/*.expected.txt`, the same files a reviewer would use by hand. Their expected outputs were derived from the rules by hand, not captured from the tool, so they check behaviour rather than repeat it. `.gitattributes` keeps the example files byte-exact.
 
 ## Complexity
 

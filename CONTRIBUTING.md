@@ -47,7 +47,7 @@ Scopes name the area changed: a module (`parse`, `network`, `report`, `stats`, `
 - **No magic values** in logic. Add them to `src/constants.ts`.
 - **Validate at the boundary.** New input shapes get a Zod schema, and their types come from `z.infer`.
 - **Erasable TypeScript only** (no enums or namespaces), so `pnpm dev` can run the source directly. Relative imports use `.ts` extensions.
-- **Tests mirror `src/`.** New behavior needs a test. If you change output, update the `examples/*.expected.txt` golden files on purpose, not just to make tests pass.
+- **Tests mirror `src/`.** New behavior needs a test. If you change output, update the `examples/*.expected.txt` golden files on purpose, not just to make tests pass. To cover a new case, add `examples/scenarios/<name>.txt` and a hand-written `<name>.expected.txt`; the scenario test picks it up automatically.
 
 Formatting (oxfmt) and lint fixes (oxlint) are applied automatically on commit. Don't bypass the hooks with `--no-verify`.
 

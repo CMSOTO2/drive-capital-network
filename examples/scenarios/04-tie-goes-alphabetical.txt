@@ -1,0 +1,10 @@
+Partner Zoe
+Partner Adam
+Partner Molly
+Company Initech
+Employee Peter Initech
+Contact Peter Zoe call
+Contact Peter Molly call
+Contact Peter Adam call
+Contact Peter Zoe email
+Contact Peter Adam coffee

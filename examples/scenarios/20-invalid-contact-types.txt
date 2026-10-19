@@ -1,0 +1,8 @@
+Partner Chris
+Company ACME
+Employee Sam ACME
+Contact Sam Chris text
+Contact Sam Chris Email
+Contact Sam Chris cofee
+Contact Sam Chris meeting
+Contact Sam Chris call

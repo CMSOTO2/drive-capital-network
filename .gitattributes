@@ -1,0 +1,3 @@
+# Example inputs are byte-exact on purpose: some test Windows line endings,
+# a byte order mark, tabs, or a missing final newline. Never convert them.
+examples/**/*.txt -text

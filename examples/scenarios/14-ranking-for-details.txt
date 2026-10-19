@@ -1,0 +1,17 @@
+Partner Ann
+Partner Ben
+Partner Cat
+Partner Dan
+Company Initech
+Company Hooli
+Employee Peter Initech
+Employee Milton Initech
+Employee Gavin Hooli
+Contact Peter Ann call
+Contact Milton Ann email
+Contact Peter Ben coffee
+Contact Milton Ben call
+Contact Peter Cat email
+Contact Gavin Dan call
+Contact Gavin Cat call
+Contact Gavin Dan email

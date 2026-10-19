@@ -1,0 +1,7 @@
+﻿Partner Chris
+Partner	Molly
+   Company   ACME   
+Employee		Sam	ACME
+Contact Sam Molly call
+	Contact  Sam  Molly   email	
+Contact Sam Chris coffee
