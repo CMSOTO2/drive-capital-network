@@ -64,7 +64,7 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 - [x] `./analyze_network` at the repo root: runs from source right after `pnpm install`
 - [x] Node 22.18+ support, with CI testing Node 22.18 and 24
-- [ ] `--stats`: summary of the data and of skipped lines by reason
+- [x] `--stats`: summary of the data and of skipped lines by reason, as text or JSON
 - [ ] `--plain` mode and other accessibility fixes
 - [ ] Decision records for telemetry and accessibility
 

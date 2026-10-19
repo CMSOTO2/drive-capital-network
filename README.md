@@ -52,16 +52,17 @@ cat file | analyze-network [options]
 
 Input comes from `file`, or from STDIN when `file` is missing or `-`. The report goes to **stdout**, and warnings go to **stderr**, so the report stays clean when piped.
 
-| Option                      | Description                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| `-c`, `--company <name>`    | Only report this company. Repeat for more. Exits 1 if a name isn't in the input |
-| `-d`, `--details`           | List every partner's strength, not just the strongest                           |
-| `-f`, `--format text\|json` | Output format. `text` (default) is the format the prompt asks for               |
-| `--strict`                  | Stop at the first invalid line and exit 1, printing no report                   |
-| `-q`, `--quiet`             | Don't print warnings about skipped lines                                        |
-| `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color            |
-| `-h`, `--help`              | Show help                                                                       |
-| `-v`, `--version`           | Show the version                                                                |
+| Option                      | Description                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `-c`, `--company <name>`    | Only report this company. Repeat for more. Exits 1 if a name isn't in the input                                                        |
+| `-d`, `--details`           | List every partner's strength, not just the strongest                                                                                  |
+| `-f`, `--format text\|json` | Output format. `text` (default) is the format the prompt asks for                                                                      |
+| `-s`, `--stats`             | Summarize the input on stderr: counts of everything declared, contacts by type, and skipped lines by reason. JSON with `--format json` |
+| `--strict`                  | Stop at the first invalid line and exit 1, printing no report                                                                          |
+| `-q`, `--quiet`             | Don't print warnings about skipped lines                                                                                               |
+| `--no-color`                | Plain warnings. `NO_COLOR=1` works too; `FORCE_COLOR=1` forces color                                                                   |
+| `-h`, `--help`              | Show help                                                                                                                              |
+| `-v`, `--version`           | Show the version                                                                                                                       |
 
 | Exit code | Meaning                                                                    |
 | --------- | -------------------------------------------------------------------------- |
@@ -106,6 +107,25 @@ Globex: Chris (2), Molly (1)
 $ analyze-network --company Globexx examples/input.txt
 error: company "Globexx" isn't in the input (did you mean "Globex"?)
 ```
+
+### Stats
+
+`--stats` summarizes what the file contains and what went wrong, without touching the report on stdout:
+
+```console
+$ analyze-network --stats --quiet examples/edge-cases.txt
+ACME: Adam (1)
+…
+stats:
+  lines: 28 read, 15 commands, 11 skipped, 2 blank or comments
+  partners: 4
+  companies: 4 (2 with a relationship, 2 without)
+  employees: 3
+  contacts: 4 (1 email, 1 call, 2 coffee)
+  skipped lines: 4 undeclared name, 2 unknown command, 1 employee redeclared, 1 invalid contact type, 1 invalid name, 1 swapped contact arguments, 1 wrong word count
+```
+
+With `--format json`, the same summary is printed to stderr as JSON. Stats hold counts only, never names, so they're safe to log or share. [Decision record 0007](./docs/decisions/0007-usage-telemetry.md) explains how this would feed product analytics in a real deployment.
 
 ### JSON output
 

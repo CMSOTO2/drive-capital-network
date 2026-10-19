@@ -24,6 +24,7 @@ describe('parseCliArgs', () => {
       format: 'text',
       company: [],
       details: false,
+      stats: false,
     });
   });
 
@@ -31,6 +32,11 @@ describe('parseCliArgs', () => {
     const options = optionsOf(['-c', 'ACME', '--company', 'Hooli', '-d']);
     expect(options.company).toEqual(['ACME', 'Hooli']);
     expect(options.details).toBe(true);
+  });
+
+  it('reads --stats and -s', () => {
+    expect(optionsOf(['--stats']).stats).toBe(true);
+    expect(optionsOf(['-s']).stats).toBe(true);
   });
 
   it('rejects a --company name with non-letters', () => {
@@ -59,6 +65,7 @@ describe('parseCliArgs', () => {
       format: 'json',
       company: [],
       details: false,
+      stats: false,
       file: 'in.txt',
     });
     expect(optionsOf(['--format=json']).format).toBe('json');

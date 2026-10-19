@@ -10,5 +10,6 @@ Short records of significant design choices: the context, what we decided, and w
 | [0004](./0004-lenient-by-default-strict-mode.md) | Lenient by default, with a strict mode  | Accepted |
 | [0005](./0005-deterministic-ordering.md)         | Deterministic ordering and tie-breaking | Accepted |
 | [0006](./0006-cli-instead-of-web-ui.md)          | A CLI, not a web UI                     | Accepted |
+| [0007](./0007-usage-telemetry.md)                | Usage telemetry: designed, not built    | Proposed |
 
 New records copy the shape of an existing one: Status, Context, Decision, Consequences.

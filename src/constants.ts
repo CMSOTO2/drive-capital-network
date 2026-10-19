@@ -74,3 +74,16 @@ export const SUGGESTION_EDIT_LIMITS = [
 ] as const;
 
 export const SUGGESTION_MAX_EDITS = 2;
+
+/** Why a line was skipped, with the label used in `--stats`. */
+export const SKIP_REASONS = {
+  unknownCommand: 'unknown command',
+  wrongWordCount: 'wrong word count',
+  invalidName: 'invalid name',
+  invalidContactType: 'invalid contact type',
+  undeclaredName: 'undeclared name',
+  swappedArguments: 'swapped contact arguments',
+  employeeRedeclared: 'employee redeclared',
+} as const;
+
+export type SkipReason = keyof typeof SKIP_REASONS;

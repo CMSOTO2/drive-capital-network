@@ -25,6 +25,7 @@ Options
   -c, --company <name>      Only report this company; repeat for more
   -d, --details             List every partner's strength, not just the top
   -f, --format <${OUTPUT_FORMATS.join('|')}>  Output format (default: text)
+  -s, --stats               Summarize the input on stderr (JSON with --format json)
       --strict              Stop at the first invalid line and exit ${EXIT_CODES.inputProblem}
   -q, --quiet               Don't print warnings about skipped lines
       --no-color            Plain warnings (NO_COLOR=1 works too)

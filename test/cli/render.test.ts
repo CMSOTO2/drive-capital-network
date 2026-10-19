@@ -6,6 +6,7 @@ import {
   createPalette,
   renderDiagnostic,
   renderDiagnostics,
+  renderStats,
   shouldUseColor,
   underlineWords,
 } from '../../src/cli/render.ts';
@@ -17,13 +18,23 @@ const diagnostic: Diagnostic = {
   line: 3,
   text: 'Contact Laurie Chris text',
   message: 'contact type "text" is not one of email, call, or coffee',
+  reason: 'invalidContactType',
   words: [3],
   notes: [],
 };
 const resultWith = (overrides: Partial<PipelineResult>): PipelineResult => ({
   report: [{ company: 'ACME', partners: [] }],
   diagnostics: [],
+  lineCount: 1,
+  ignoredLineCount: 0,
   commandCount: 1,
+  counts: {
+    partners: 0,
+    companies: 1,
+    companiesWithContacts: 0,
+    employees: 0,
+    contactsByType: { email: 0, call: 0, coffee: 0 },
+  },
   aborted: false,
   ...overrides,
 });
@@ -186,5 +197,55 @@ describe('underlineWords', () => {
 
   it('ignores positions past the end of the line', () => {
     expect(underlineWords('Company', [4])).toBe('');
+  });
+});
+
+describe('renderStats', () => {
+  it('prints one labelled line per topic', () => {
+    expect(
+      renderStats(
+        {
+          lines: { read: 1200, commands: 1100, skipped: 60, ignored: 40 },
+          partners: 3,
+          companies: { total: 5, withRelationship: 4, withoutRelationship: 1 },
+          employees: 20,
+          contacts: {
+            total: 1050,
+            byType: { email: 1000, call: 30, coffee: 20 },
+          },
+          skipped: [
+            { reason: 'undeclaredName', label: 'undeclared name', count: 50 },
+            { reason: 'invalidName', label: 'invalid name', count: 10 },
+          ],
+        },
+        plain,
+      ),
+    ).toBe(
+      [
+        'stats:',
+        '  lines: 1,200 read, 1,100 commands, 60 skipped, 40 blank or comments',
+        '  partners: 3',
+        '  companies: 5 (4 with a relationship, 1 without)',
+        '  employees: 20',
+        '  contacts: 1,050 (1,000 email, 30 call, 20 coffee)',
+        '  skipped lines: 50 undeclared name, 10 invalid name',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('says "none" when nothing was skipped', () => {
+    const output = renderStats(
+      {
+        lines: { read: 0, commands: 0, skipped: 0, ignored: 0 },
+        partners: 0,
+        companies: { total: 0, withRelationship: 0, withoutRelationship: 0 },
+        employees: 0,
+        contacts: { total: 0, byType: { email: 0, call: 0, coffee: 0 } },
+        skipped: [],
+      },
+      plain,
+    );
+    expect(output).toContain('  skipped lines: none\n');
   });
 });

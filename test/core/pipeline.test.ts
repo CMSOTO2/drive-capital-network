@@ -26,6 +26,7 @@ describe('analyzeLines', () => {
         line: 6,
         text: 'Contact Sam Chris text',
         message: 'contact type "text" is not one of email, call, or coffee',
+        reason: 'invalidContactType',
         words: [3],
         notes: [],
       },
@@ -33,6 +34,7 @@ describe('analyzeLines', () => {
         line: 8,
         text: 'Contact Ghost Chris call',
         message: 'contact skipped: employee "Ghost" hasn\'t been declared',
+        reason: 'undeclaredName',
         words: [1],
         notes: [],
       },
@@ -119,8 +121,26 @@ describe('analyzeLines', () => {
     expect(await analyzeLines([])).toEqual({
       report: [],
       diagnostics: [],
+      lineCount: 0,
+      ignoredLineCount: 0,
       commandCount: 0,
+      counts: {
+        partners: 0,
+        companies: 0,
+        companiesWithContacts: 0,
+        employees: 0,
+        contactsByType: { email: 0, call: 0, coffee: 0 },
+      },
       aborted: false,
     });
+  });
+
+  it('counts every line, ignored lines, and commands', async () => {
+    const result = await analyzeLines(lines);
+    expect({
+      lineCount: result.lineCount,
+      ignoredLineCount: result.ignoredLineCount,
+      commandCount: result.commandCount,
+    }).toEqual({ lineCount: 8, ignoredLineCount: 2, commandCount: 4 });
   });
 });

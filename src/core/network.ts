@@ -1,8 +1,13 @@
-import type { CommandKind } from '../constants.ts';
+import {
+  CONTACT_TYPES,
+  type CommandKind,
+  type SkipReason,
+} from '../constants.ts';
 import type {
   Command,
   CompanyCommand,
   ContactCommand,
+  ContactType,
   EmployeeCommand,
   PartnerCommand,
 } from '../schemas/command.ts';
@@ -17,10 +22,21 @@ export interface NameReference {
 /** Why a command couldn't be applied. The network is left unchanged. */
 export interface Problem {
   message: string;
+  reason: SkipReason;
   /** The command fields at fault (e.g. `partner`), so the CLI can point at them. */
   fields: string[];
   /** Names that weren't declared yet; a later declaration can explain them. */
   undeclared: NameReference[];
+}
+
+/** How much the network holds, for `--stats`. */
+export interface NetworkCounts {
+  partners: number;
+  companies: number;
+  /** Companies with at least one contact. */
+  companiesWithContacts: number;
+  employees: number;
+  contactsByType: Record<ContactType, number>;
 }
 
 /**
@@ -36,6 +52,7 @@ export class Network {
   readonly #companies = new Set<string>();
   readonly #employeeCompany = new Map<string, string>();
   readonly #strength = new Map<string, Map<string, number>>();
+  readonly #contactsByType = new Map<ContactType, number>();
 
   /**
    * Applies one command in input order. Returns a problem when the command
@@ -65,6 +82,19 @@ export class Network {
     return this.#strength.get(company) ?? new Map();
   }
 
+  get counts(): NetworkCounts {
+    const contactsByType = Object.fromEntries(
+      CONTACT_TYPES.map((type) => [type, this.#contactsByType.get(type) ?? 0]),
+    ) as Record<ContactType, number>;
+    return {
+      partners: this.#partners.size,
+      companies: this.#companies.size,
+      companiesWithContacts: this.#strength.size,
+      employees: this.#employeeCompany.size,
+      contactsByType,
+    };
+  }
+
   #addPartner({ name }: PartnerCommand): undefined {
     this.#partners.add(name);
   }
@@ -78,6 +108,7 @@ export class Network {
       const hint = didYouMean(suggest(company, this.#companies));
       return {
         message: `employee "${name}" works at company "${company}", which hasn't been declared${hint}`,
+        reason: 'undeclaredName',
         fields: ['company'],
         undeclared: [{ kind: 'company', name: company }],
       };
@@ -87,6 +118,7 @@ export class Network {
     if (currentCompany !== undefined && currentCompany !== company) {
       return {
         message: `employee "${name}" is already declared at "${currentCompany}"; employee names are unique, so "${company}" is ignored`,
+        reason: 'employeeRedeclared',
         fields: ['company'],
         undeclared: [],
       };
@@ -105,7 +137,7 @@ export class Network {
     const partnerIsDeclared = this.#partners.has(partner);
 
     if (company !== undefined && partnerIsDeclared) {
-      this.#countContact(company, partner);
+      this.#countContact(company, partner, type);
       return undefined;
     }
 
@@ -116,6 +148,7 @@ export class Network {
     if (namesAreSwapped) {
       return {
         message: `contact skipped: "${employee}" is a partner and "${partner}" is an employee; the order is Contact ${partner} ${employee} ${type}`,
+        reason: 'swappedArguments',
         fields: ['employee', 'partner'],
         undeclared: [],
       };
@@ -140,12 +173,15 @@ export class Network {
 
     return {
       message: `contact skipped: ${reasons.join(' and ')}`,
+      reason: 'undeclaredName',
       fields,
       undeclared,
     };
   }
 
-  #countContact(company: string, partner: string): void {
+  #countContact(company: string, partner: string, type: ContactType): void {
+    this.#contactsByType.set(type, (this.#contactsByType.get(type) ?? 0) + 1);
+
     let counts = this.#strength.get(company);
     if (counts === undefined) {
       counts = new Map();

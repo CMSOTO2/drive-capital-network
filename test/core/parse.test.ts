@@ -15,6 +15,11 @@ const wordsOf = (line: string): number[] => {
   return result.status === 'error' ? result.words : [];
 };
 
+const reasonOf = (line: string) => {
+  const result = parseLine(line);
+  return result.status === 'error' ? result.reason : undefined;
+};
+
 describe('parseLine', () => {
   describe('valid commands', () => {
     it('parses Partner', () => {
@@ -96,6 +101,13 @@ describe('parseLine', () => {
 
     it('points at the extra words when there are too many', () => {
       expect(wordsOf('Partner Chris Van Dyke')).toEqual([2, 3]);
+    });
+
+    it('gives each error a reason', () => {
+      expect(reasonOf('Investor Chris')).toBe('unknownCommand');
+      expect(reasonOf('Partner')).toBe('wrongWordCount');
+      expect(reasonOf('Partner Chris2')).toBe('invalidName');
+      expect(reasonOf('Contact Laurie Chris text')).toBe('invalidContactType');
     });
 
     it('points at every invalid field', () => {

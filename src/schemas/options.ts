@@ -21,6 +21,7 @@ export const CliOptionsSchema = z.object({
   /** Companies to report on; empty means all of them. */
   company: z.array(nameSchema('--company')).default([]),
   details: z.boolean().default(false),
+  stats: z.boolean().default(false),
   /** Input file path; `undefined` means STDIN. */
   file: z.string().min(1, { error: 'input file path is empty' }).optional(),
 });

@@ -169,6 +169,34 @@ describe('main', () => {
     });
   });
 
+  describe('--stats', () => {
+    it('prints a summary on stderr and leaves stdout unchanged', async () => {
+      const { code, stdout, stderr } = await runCli([
+        '--stats',
+        'examples/input.txt',
+      ]);
+      expect(code).toBe(0);
+      expect(stdout).toBe(expected);
+      expect(stderr).toContain('stats:\n  lines: 13 read, 13 commands');
+    });
+
+    it('prints the summary as JSON with --format json', async () => {
+      const { stderr } = await runCli([
+        '--stats',
+        '--format',
+        'json',
+        'examples/input.txt',
+      ]);
+      expect(JSON.parse(stderr)).toMatchObject({ partners: 3, employees: 3 });
+    });
+
+    it('still prints stats with --quiet', async () => {
+      const { stderr } = await runCli(['-q', '-s', 'examples/edge-cases.txt']);
+      expect(stderr).not.toContain('warning:');
+      expect(stderr).toContain('skipped lines: 4 undeclared name');
+    });
+  });
+
   describe('empty and unusual input', () => {
     it('prints nothing and adds a note for empty input', async () => {
       expect(await runCli([], { stdin: '' })).toEqual({

@@ -202,6 +202,27 @@ describe('Network', () => {
     });
   });
 
+  it('counts what it holds', () => {
+    applyAll([
+      partner('Chris'),
+      partner('Molly'),
+      company('ACME'),
+      company('Hooli'),
+      employee('Sam', 'ACME'),
+      contact('Sam', 'Chris', 'coffee'),
+      contact('Sam', 'Molly', 'coffee'),
+      contact('Sam', 'Chris', 'email'),
+      contact('Ghost', 'Chris', 'call'),
+    ]);
+    expect(network.counts).toEqual({
+      partners: 2,
+      companies: 2,
+      companiesWithContacts: 1,
+      employees: 1,
+      contactsByType: { email: 1, call: 0, coffee: 2 },
+    });
+  });
+
   it('returns an empty map for a company with no contacts', () => {
     network.apply(company('ACME'));
     expect(network.strengthsFor('ACME').size).toBe(0);

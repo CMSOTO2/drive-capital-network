@@ -5,6 +5,7 @@ import {
   KEYWORDS,
   type CommandKind,
   type Keyword,
+  type SkipReason,
 } from '../constants.ts';
 import { CommandSchema, type Command } from '../schemas/command.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
@@ -18,16 +19,17 @@ export type ParseResult =
       message: string;
       /** 0-based positions of the words at fault; the keyword is word 0. */
       words: number[];
+      reason: SkipReason;
     };
 
 const isKeyword = (word: string): word is Keyword =>
   Object.hasOwn(COMMAND_SYNTAX, word);
 
-const failure = (message: string, words: number[]): ParseResult => ({
-  status: 'error',
-  message,
-  words,
-});
+const failure = (
+  message: string,
+  words: number[],
+  reason: SkipReason,
+): ParseResult => ({ status: 'error', message, words, reason });
 
 /**
  * Where a command's field sits on its line. In `Contact Laurie Chris call`,
@@ -49,7 +51,7 @@ function unknownCommand(word: string): ParseResult {
   const message = hint
     ? `unknown command "${word}"${didYouMean(hint)}`
     : `unknown command "${word}"; expected ${formatList(KEYWORDS)}`;
-  return failure(message, [0]);
+  return failure(message, [0], 'unknownCommand');
 }
 
 function wrongWordCount(keyword: Keyword, got: number): ParseResult {
@@ -67,6 +69,7 @@ function wrongWordCount(keyword: Keyword, got: number): ParseResult {
   return failure(
     `${keyword} expects ${expected} ${noun} but got ${got} (usage: ${usage})`,
     words,
+    'wrongWordCount',
   );
 }
 
@@ -111,5 +114,12 @@ export function parseLine(line: string): ParseResult {
   const words = issues
     .map((issue) => wordPositionOf(kind, String(issue.path[0])))
     .filter((position) => position !== undefined);
-  return failure(issues.map((issue) => issue.message).join('; '), words);
+  // A line can have several issues; the first one decides the reason.
+  const firstField = String(issues[0]?.path[0]);
+  const reason = firstField === 'type' ? 'invalidContactType' : 'invalidName';
+  return failure(
+    issues.map((issue) => issue.message).join('; '),
+    words,
+    reason,
+  );
 }

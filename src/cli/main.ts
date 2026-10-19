@@ -9,6 +9,7 @@ import { EXIT_CODES } from '../constants.ts';
 import { selectCompanies } from '../core/analyze.ts';
 import { formatJsonReport, formatTextReport } from '../core/format.ts';
 import { analyzeLines, type PipelineResult } from '../core/pipeline.ts';
+import { summarize } from '../core/stats.ts';
 import { didYouMean } from '../utils/suggest.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
@@ -16,6 +17,7 @@ import {
   createPalette,
   renderDiagnostics,
   renderMessage,
+  renderStats,
   shouldUseColor,
   type Palette,
 } from './render.ts';
@@ -134,6 +136,14 @@ export async function main(io: CliIo): Promise<number> {
 
   if (!options.quiet || result.aborted) {
     io.stderr.write(renderDiagnostics(result, palette));
+  }
+  if (options.stats) {
+    const stats = summarize(result);
+    io.stderr.write(
+      options.format === 'json'
+        ? `${JSON.stringify(stats, null, 2)}\n`
+        : renderStats(stats, palette),
+    );
   }
   if (result.aborted) return EXIT_CODES.inputProblem;
 

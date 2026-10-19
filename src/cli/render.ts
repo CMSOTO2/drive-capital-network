@@ -2,6 +2,7 @@ import { styleText } from 'node:util';
 
 import { MAX_PRINTED_DIAGNOSTICS } from '../constants.ts';
 import type { Diagnostic, PipelineResult } from '../core/pipeline.ts';
+import type { RunStats } from '../core/stats.ts';
 
 type Style = Parameters<typeof styleText>[0];
 
@@ -29,8 +30,11 @@ export function shouldUseColor({ flag, isTTY, env }: ColorContext): boolean {
   return isTTY === true;
 }
 
+/** `1,234`: thousands separators make big counts easier to read. */
+const formatCount = (count: number): string => count.toLocaleString('en-US');
+
 const plural = (count: number, word: string): string =>
-  `${count.toLocaleString('en-US')} ${word}${count === 1 ? '' : 's'}`;
+  `${formatCount(count)} ${word}${count === 1 ? '' : 's'}`;
 
 export type Severity = 'error' | 'warning' | 'note';
 
@@ -161,4 +165,36 @@ export function renderDiagnostics(
     );
   }
   return output;
+}
+
+/**
+ * The `--stats` summary, one labelled line per topic:
+ *
+ *   stats:
+ *     lines: 28 read, 14 commands, 11 skipped, 3 blank or comments
+ *     companies: 4 (2 with a relationship, 2 without)
+ *     contacts: 4 (1 email, 1 call, 2 coffee)
+ */
+export function renderStats(stats: RunStats, palette: Palette): string {
+  const { lines, companies, contacts } = stats;
+
+  const contactTypes = Object.entries(contacts.byType)
+    .map(([type, count]) => `${formatCount(count)} ${type}`)
+    .join(', ');
+  const skipped =
+    stats.skipped.length === 0
+      ? 'none'
+      : stats.skipped
+          .map(({ label, count }) => `${formatCount(count)} ${label}`)
+          .join(', ');
+
+  const rows = [
+    `lines: ${formatCount(lines.read)} read, ${formatCount(lines.commands)} commands, ${formatCount(lines.skipped)} skipped, ${formatCount(lines.ignored)} blank or comments`,
+    `partners: ${formatCount(stats.partners)}`,
+    `companies: ${formatCount(companies.total)} (${formatCount(companies.withRelationship)} with a relationship, ${formatCount(companies.withoutRelationship)} without)`,
+    `employees: ${formatCount(stats.employees)}`,
+    `contacts: ${formatCount(contacts.total)} (${contactTypes})`,
+    `skipped lines: ${skipped}`,
+  ];
+  return `${palette.paint('bold', 'stats:')}\n${rows.map((row) => `  ${row}\n`).join('')}`;
 }

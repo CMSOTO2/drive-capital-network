@@ -1,7 +1,7 @@
-import { BYTE_ORDER_MARK } from '../constants.ts';
+import { BYTE_ORDER_MARK, type SkipReason } from '../constants.ts';
 import type { Command } from '../schemas/command.ts';
 import { rankRelationships, type CompanyRelationships } from './analyze.ts';
-import { Network, type NameReference } from './network.ts';
+import { Network, type NameReference, type NetworkCounts } from './network.ts';
 import { parseLine, wordPositionOf } from './parse.ts';
 
 /** A problem with one input line. The line was skipped. */
@@ -11,6 +11,7 @@ export interface Diagnostic {
   /** The input line as written, minus a trailing carriage return or BOM. */
   text: string;
   message: string;
+  reason: SkipReason;
   /** 0-based positions of the words at fault, for pointing at them. */
   words: number[];
   /** Extra context found later in the file, e.g. a late declaration. */
@@ -25,8 +26,14 @@ export interface PipelineOptions {
 export interface PipelineResult {
   report: CompanyRelationships[];
   diagnostics: Diagnostic[];
+  /** Every line read, including blanks and comments. */
+  lineCount: number;
+  /** Blank and `#` comment lines. */
+  ignoredLineCount: number;
   /** Lines that produced a valid, applied command. */
   commandCount: number;
+  /** What the network ended up holding. */
+  counts: NetworkCounts;
   /** True when --strict stopped processing early; `report` is then empty. */
   aborted: boolean;
 }
@@ -64,18 +71,23 @@ export async function analyzeLines(
   const diagnostics: Diagnostic[] = [];
   const waitingForDeclaration = new Map<string, Diagnostic[]>();
   let commandCount = 0;
+  let ignoredLineCount = 0;
   let lineNumber = 0;
 
   for await (const rawLine of lines) {
     lineNumber += 1;
     const parsed = parseLine(rawLine);
-    if (parsed.status === 'skip') continue;
+    if (parsed.status === 'skip') {
+      ignoredLineCount += 1;
+      continue;
+    }
 
     if (parsed.status === 'error') {
       diagnostics.push({
         line: lineNumber,
         text: cleanLine(rawLine),
         message: parsed.message,
+        reason: parsed.reason,
         words: parsed.words,
         notes: [],
       });
@@ -105,6 +117,7 @@ export async function analyzeLines(
       line: lineNumber,
       text: cleanLine(rawLine),
       message: problem.message,
+      reason: problem.reason,
       words: problem.fields
         .map((field) => wordPositionOf(command.kind, field))
         .filter((position) => position !== undefined),
@@ -125,7 +138,10 @@ export async function analyzeLines(
   return {
     report: aborted ? [] : rankRelationships(network),
     diagnostics,
+    lineCount: lineNumber,
+    ignoredLineCount,
     commandCount,
+    counts: network.counts,
     aborted,
   };
 }
