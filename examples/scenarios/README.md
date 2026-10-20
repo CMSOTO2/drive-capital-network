@@ -33,18 +33,18 @@ The expected outputs were worked out by hand from the rules in the main README (
 
 Each of these prints warnings on stderr, skips the bad lines, and still reports on the rest.
 
-| File                                    | What it shows                                                                              | Also try             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------- |
-| `20-invalid-contact-types`              | `text`, `meeting` rejected; `Email` and `cofee` get "did you mean" hints                   | `--strict`           |
-| `21-keyword-typos`                      | `Compnay`, `employee`, `Contcat`, `PARTNER` get hints; `Investor` lists the valid commands |                      |
-| `22-undeclared-names`                   | `Lauri`, `Chriss`, `Globexx` get hints for the names that do exist                         | `--plain`            |
-| `23-used-before-declared`               | A contact before its employee and partner exist: notes point at the later declarations     |                      |
-| `24-swapped-contact-arguments`          | `Contact Chris Sam`: the warning shows the corrected line                                  |                      |
-| `25-employee-declared-at-two-companies` | Sarah stays at her first company                                                           |                      |
-| `26-wrong-word-counts`                  | Too few and too many words for every command, with usage                                   |                      |
-| `27-invalid-names`                      | Digits, hyphens, underscores, apostrophes, and accented letters (`Zoë`, `José`)            |                      |
-| `28-wrong-file-csv`                     | A CSV file: nothing parses, so the tool asks whether it's the right file                   |                      |
-| `29-many-errors`                        | 25 bad lines: the first 20 are shown, then "…and 5 more warnings"                          | `--quiet`, `--stats` |
+| File                                    | What it shows                                                                                           | Also try             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------- |
+| `20-invalid-contact-types`              | `text`, `meeting` rejected; `Email` and `cofee` get "did you mean" hints                                | `--strict`           |
+| `21-keyword-typos`                      | `Compnay`, `employee`, `Contcat`, `PARTNER` get hints; `Investor` lists the valid commands              |                      |
+| `22-undeclared-names`                   | `Lauri`, `Chriss`, `Globexx` get hints for the names that do exist                                      | `--plain`            |
+| `23-used-before-declared`               | A contact before its employee and partner exist: notes point at the later declarations                  |                      |
+| `24-swapped-contact-arguments`          | `Contact Chris Sam`: the warning shows the corrected line                                               |                      |
+| `25-employee-declared-at-two-companies` | Sarah stays at her first company                                                                        |                      |
+| `26-wrong-word-counts`                  | Too few and too many words for every command, with usage                                                |                      |
+| `27-invalid-names`                      | Digits, hyphens, underscores, apostrophes, and accented letters (`Zoë`, `José`)                         |                      |
+| `28-wrong-file-csv`                     | A CSV file: nothing parses, so the tool asks whether it's the right file                                |                      |
+| `29-many-errors`                        | 25 bad lines: the first 20 are shown, then "…and 5 more warnings (add --stats to count them by reason)" | `--quiet`, `--stats` |
 
 ## Awkward inputs
 

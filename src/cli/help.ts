@@ -25,10 +25,12 @@ Options
   -c, --company <name>      Only report this company; repeat for more
   -d, --details             List every partner's strength, not just the top
   -f, --format <${OUTPUT_FORMATS.join('|')}>  Output format (default: text)
-  -s, --stats               Summarize the input on stderr (JSON with --format json)
+  -s, --stats               Summarize the input on stderr (as JSON with
+                            --format json)
       --strict              Stop at the first invalid line and exit ${EXIT_CODES.inputProblem}
   -q, --quiet               Don't print warnings about skipped lines
-      --no-color            No colors (NO_COLOR=1 works too)
+      --[no-]color          Force colors on or off (default: on for a
+                            terminal; NO_COLOR=1 also turns them off)
       --plain               Screen-reader-friendly output: no color, no
                             decoration, ASCII only (automatic with TERM=dumb)
   -h, --help                Show this help

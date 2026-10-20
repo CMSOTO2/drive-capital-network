@@ -14,7 +14,7 @@ Hooli: Molly (1)
 > **For reviewers**
 >
 > - **Run it:** `pnpm install`, then `./analyze_network examples/input.txt` (Node 22.18+, no build step). `pnpm test` runs the tests.
-> - **The core logic** is about 450 lines in [`src/core/`](./src/core/): [`parse.ts`](./src/core/parse.ts) → [`network.ts`](./src/core/network.ts) → [`analyze.ts`](./src/core/analyze.ts) → [`format.ts`](./src/core/format.ts). Everything else is the CLI around it.
+> - **The core logic** is under 500 lines in [`src/core/`](./src/core/): [`parse.ts`](./src/core/parse.ts) → [`network.ts`](./src/core/network.ts) → [`analyze.ts`](./src/core/analyze.ts) → [`format.ts`](./src/core/format.ts). Everything else is the CLI around it.
 > - **30 ready-made inputs** (happy paths, mistakes, awkward files) are in [`examples/scenarios/`](./examples/scenarios/), each with its expected output.
 > - **The prompt** is kept verbatim in [`docs/prompt.md`](./docs/prompt.md). [How each requirement is met](#how-each-requirement-is-met) maps it to the code, interpretations are in [Assumptions and edge cases](#assumptions-and-edge-cases), and the bigger design choices are in [`docs/decisions/`](./docs/decisions/).
 
@@ -74,7 +74,7 @@ Hooli: Molly (1)
 
 **Quality**
 
-- Tests at every level: unit tests per module, the CLI in process and as a real child process, 31 example files with hand-worked expected output, the prompt's own example read straight from [`docs/prompt.md`](./docs/prompt.md), and differential stress tests against an independent reference model.
+- Tests at every level: unit tests per module, the CLI in process and as a real child process, 30 scenario files with hand-worked expected output plus a 12,000-line generated one, the prompt's own example read straight from [`docs/prompt.md`](./docs/prompt.md), and differential stress tests against an independent reference model.
 - `pnpm -s stress` generates long, messy inputs along with the output they must produce.
 - TypeScript 7 in strict mode, Zod as the only runtime dependency, oxlint with warnings as errors, and oxfmt.
 - A pre-commit hook that lints, formats, and runs the tests; commitlint for Conventional Commits; and CI on Node 22.18 and 24.
@@ -135,6 +135,7 @@ By default a bad line is reported and skipped, and the rest of the file is still
 
 ```console
 $ analyze-network examples/edge-cases.txt
+…
 warning: line 18: contact type "Coffee" is not valid (did you mean "coffee"?)
   18 | Contact Jamie Chris Coffee
      |                     ^^^^^^
@@ -147,6 +148,7 @@ warning: line 27: contact skipped: "Chris" is a partner and "Sarah" is an employ
      |         ^^^^^ ^^^^^
 …
 note: skipped 11 invalid lines; use --strict to fail instead
+
 ACME: Adam (1)
 Globex: Molly (2)
 hooli: No current relationship
@@ -187,6 +189,7 @@ stats:
     invalid name: 1
     swapped contact arguments: 1
     wrong word count: 1
+
 ACME: Adam (1)
 …
 ```
@@ -277,9 +280,16 @@ The stress test found three real problems, all fixed: "did you mean" lookups mad
 
 The program is a pipeline: read lines, parse each into a typed command, apply it to an in-memory network model, rank partners per company, and format the result.
 
-```text
-file / STDIN → parse (Zod) → network model → rank → format → stdout
-                    └──────────── warnings ──────────────────→ stderr
+```mermaid
+flowchart LR
+  input["input.txt or STDIN"] --> parse["Parse each line<br/>(Zod schemas)"]
+  parse -->|valid command| network["Network model<br/>counts contacts per<br/>company and partner"]
+  parse -->|invalid line| warnings["Warnings<br/>line skipped"]
+  network -->|undeclared name,<br/>employee redeclared| warnings
+  network --> rank["Rank partners<br/>per company"]
+  rank --> format["Format<br/>text or JSON"]
+  format --> stdout["stdout:<br/>the report"]
+  warnings --> stderr["stderr:<br/>warnings, notes, --stats"]
 ```
 
 The code is split into layers: constants and Zod schemas at the bottom, pure domain logic in `src/core/`, and all I/O in `src/cli/`. Tests mirror that layout. Nothing in `core` touches the filesystem or `process`, so every rule can be tested with plain strings. [ARCHITECTURE.md](./ARCHITECTURE.md) has the full module map.

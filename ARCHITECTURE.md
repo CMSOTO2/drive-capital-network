@@ -36,19 +36,53 @@ docs/prompt.md          the take-home prompt, verbatim: the source of truth for 
 docs/decisions/         architecture decision records
 ```
 
+```mermaid
+flowchart TD
+  entry["analyze_network, src/cli/bin.ts"] --> cli
+  cli["<b>src/cli</b>: the only layer with I/O<br/>main · args · lines · render · help"] --> core
+  core["<b>src/core</b>: pure logic<br/>pipeline · parse · network · analyze · format · stats"] --> schemas
+  schemas["<b>src/schemas</b>: Zod<br/>command · options"] --> constants["<b>src/constants.ts</b>"]
+  cli -.-> utils["<b>src/utils</b><br/>suggest · text"]
+  core -.-> utils
+  schemas -.-> utils
+```
+
 Dependencies point one way: `cli → core → schemas → constants`, and any layer may use `utils`. `core` never imports from `cli`, so the whole domain can be tested without touching the filesystem.
 
 ## Data flow
 
-```text
-input (file or STDIN)
-  → read one line at a time                   cli/lines.ts
-  → parseLine(line) → ok | error | skip       core/parse.ts
-  → network.apply(command) → problem?         core/network.ts
-  → rankRelationships(network)                core/analyze.ts
-  → formatTextReport / formatJsonReport       core/format.ts
-  → stdout (report), stderr (diagnostics)     cli/main.ts, cli/render.ts
+```mermaid
+flowchart TD
+  argv["command-line arguments"] --> args["parseCliArgs<br/>cli/args.ts"]
+  args -->|unknown option,<br/>bad --format| usage["error with a hint<br/>exit 2"]
+  args --> open["open the file or STDIN<br/>cli/main.ts"]
+  open -->|missing, a directory,<br/>no permission, no input| usage
+  open --> lines["readLines<br/>cli/lines.ts"]
+  lines -->|one line at a time| parse
+
+  subgraph pipeline["analyzeLines: core/pipeline.ts"]
+    parse["parseLine<br/>core/parse.ts"]
+    parse -->|blank or # comment| ignored["counted as ignored"]
+    parse -->|error| diagnostic["Diagnostic<br/>first 20 kept in full,<br/>every one counted"]
+    parse -->|command| apply["network.apply<br/>core/network.ts"]
+    apply -->|Problem| diagnostic
+    apply -->|ok| model[("Network: partners, companies,<br/>employee → company,<br/>company → partner → count")]
+    model --> rank["rankRelationships<br/>core/analyze.ts"]
+  end
+
+  diagnostic -->|with --strict| stop["error, no report<br/>exit 1"]
+  diagnostic --> render["renderDiagnostics<br/>cli/render.ts"]
+  model -->|with --stats| stats["summarize<br/>core/stats.ts"]
+  rank --> select["selectCompanies<br/>--company"]
+  select -->|name not in input| missing["error with a hint;<br/>the rest still print, exit 1"]
+  select --> format["formatTextReport or<br/>formatJsonReport<br/>core/format.ts"]
+  format --> stdout["stdout: the report"]
+  render --> stderr["stderr"]
+  stats --> stderr
+  missing --> stderr
 ```
+
+In short: read one line at a time, parse it, apply it to the network, then rank and format once the input ends. Every step on the way to stdout is pure except reading and writing.
 
 `core/pipeline.ts` runs parse → network → analyze over any iterable of lines and returns the report plus a `Diagnostic` for every skipped line: the line number, the line's text, the message, a `reason` code, the positions of the words at fault, and any notes found later in the file. It accepts an async iterable, so the CLI streams a file of any size through it, and tests pass a plain array.
 
@@ -84,6 +118,39 @@ strength: Map<company, Map<partner, number>>; // contacts per company/partner pa
 ```
 
 A `Contact Laurie Chris email` looks up `employeeCompany.get("Laurie")` → `Globex` and increments `strength[Globex][Chris]`.
+
+The prompt's example as a network. Each line is a contact; a partner's strength with a company is the number of lines between that partner and the company's employees:
+
+```mermaid
+flowchart LR
+  subgraph drive["Drive Capital partners"]
+    Chris
+    Molly
+    Rezzan
+  end
+  subgraph globex["Globex"]
+    Laurie
+    Jamie
+  end
+  subgraph hooli["Hooli"]
+    Abdi
+  end
+  subgraph acme["ACME"]
+    acmeEmpty["no employees"]
+  end
+  Chris ---|email| Laurie
+  Chris ---|coffee| Laurie
+  Molly ---|call| Laurie
+  Molly ---|email| Abdi
+```
+
+| Company | Strength by partner | Output                          |
+| ------- | ------------------- | ------------------------------- |
+| ACME    | none                | `ACME: No current relationship` |
+| Globex  | Chris 2, Molly 1    | `Globex: Chris (2)`             |
+| Hooli   | Molly 1             | `Hooli: Molly (1)`              |
+
+Rezzan is declared but has no contacts, so Rezzan never appears in the output.
 
 ### Why count at ingest
 
@@ -145,14 +212,14 @@ The stdout report never contains diagnostics or color codes, so `analyze-network
 
 ## Testing
 
-| Level                 | Where                                                     | What it covers                                                                                                                                                                                                                               |
-| --------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit                  | `test/core/`, `test/schemas/`, `test/utils/`              | Each rule in isolation with plain values, including that `--stats` output never contains names                                                                                                                                               |
-| CLI, in process       | `test/cli/main.test.ts`, `args.test.ts`, `render.test.ts` | `main(io)` with fake streams: golden output for both examples, STDIN, CRLF, every exit code, formats, color, `--company`, `--details`, `--stats`, `--plain` and `TERM=dumb`, file errors                                                     |
-| End to end            | `test/cli/e2e.test.ts`                                    | `src/cli/bin.ts` and `./analyze_network` in a child process: real pipes and process exit codes                                                                                                                                               |
-| Scenarios             | `test/cli/scenarios.test.ts`                              | Every `examples/scenarios/*.txt` against its `.expected.txt` (stdout and exit code). New scenarios are picked up automatically                                                                                                               |
-| Prompt                | `test/docs/prompt.test.ts`                                | The example in `docs/prompt.md`, read straight from the file and run exactly as written (comment line included), plus a check that `examples/input.txt` is the same example                                                                  |
-| Stress (differential) | `test/scripts/stress.test.ts`                             | The program against the independent reference model in `scripts/stress.ts`: 25 seeds of 2,000 contacts through the pipeline, and 200,000 contacts piped through the CLI. Checks the report, the skipped-line count, and the counted contacts |
+| Level                 | Where                                                     | What it covers                                                                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit                  | `test/core/`, `test/schemas/`, `test/utils/`              | Each rule in isolation with plain values, including that `--stats` output never contains names                                                                                                                                                                       |
+| CLI, in process       | `test/cli/main.test.ts`, `args.test.ts`, `render.test.ts` | `main(io)` with fake streams: golden output for both examples, STDIN, CRLF, every exit code, formats, color, `--company`, `--details`, `--stats`, `--plain` and `TERM=dumb`, file errors, option and file-name hints, the blank line before the report on a terminal |
+| End to end            | `test/cli/e2e.test.ts`                                    | `src/cli/bin.ts` and `./analyze_network` in a child process: real pipes and process exit codes                                                                                                                                                                       |
+| Scenarios             | `test/cli/scenarios.test.ts`                              | Every `examples/scenarios/*.txt` against its `.expected.txt` (stdout and exit code). New scenarios are picked up automatically                                                                                                                                       |
+| Prompt                | `test/docs/prompt.test.ts`                                | The example in `docs/prompt.md`, read straight from the file and run exactly as written (comment line included), plus a check that `examples/input.txt` is the same example                                                                                          |
+| Stress (differential) | `test/scripts/stress.test.ts`                             | The program against the independent reference model in `scripts/stress.ts`: 25 seeds of 2,000 contacts through the pipeline, and 200,000 contacts piped through the CLI. Checks the report, the skipped-line count, and the counted contacts                         |
 
 The golden tests compare against `examples/*.expected.txt` and `examples/scenarios/*.expected.txt`, the same files a reviewer would use by hand. Their expected outputs were derived from the rules by hand, not captured from the tool, so they check behaviour rather than repeat it. `.gitattributes` keeps the example files byte-exact.
 
