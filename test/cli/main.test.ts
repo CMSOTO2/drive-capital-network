@@ -198,6 +198,34 @@ describe('main', () => {
     });
   });
 
+  describe('--company with a partial or ambiguous name', () => {
+    const similar =
+      'Company Globe\nCompany Globex\nCompany ACME\nCompany Acme\n';
+
+    it('lists every company it could mean instead of guessing', async () => {
+      expect(await runCli(['-c', 'Glob'], { stdin: similar })).toEqual({
+        code: 1,
+        stdout: '',
+        stderr:
+          'error: company "Glob" isn\'t in the input (did you mean "Globe" or "Globex"?)\n',
+      });
+    });
+
+    it('never picks one of two companies that differ only by case', async () => {
+      const { code, stderr } = await runCli(['-c', 'acme'], { stdin: similar });
+      expect(code).toBe(1);
+      expect(stderr).toContain('(did you mean "ACME" or "Acme"?)');
+    });
+
+    it('still reports the companies that were found', async () => {
+      const { code, stdout } = await runCli(['-c', 'Glob', '-c', 'Globe'], {
+        stdin: similar,
+      });
+      expect(code).toBe(1);
+      expect(stdout).toBe('Globe: No current relationship\n');
+    });
+  });
+
   describe('on a terminal', () => {
     const onTerminal = { outputIsTTY: true, env: { NO_COLOR: '1' } };
 

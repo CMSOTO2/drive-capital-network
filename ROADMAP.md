@@ -67,10 +67,11 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] `--stats`: summary of the data and of skipped lines by reason, as text or JSON
 - [x] `--plain` mode (automatic with `TERM=dumb`), no dimmed information, ASCII-only plain output
 - [x] Decision records for telemetry and accessibility
-- [x] `examples/scenarios/`: 30 inputs with hand-derived expected output, run by the test suite
+- [x] `examples/scenarios/`: 31 inputs with hand-derived expected output, run by the test suite
 - [x] Stress testing: `scripts/stress.ts` generator with an independent reference model, differential tests, and a committed 12,000-line sample. Found and fixed slow hint lookups, unbounded diagnostic memory, and readline dropping lines
 - [x] UX pass: hints for mistyped options and file names, long lines and names cut down in warnings, a blank line between warnings and the report on a terminal, a `--stats` pointer under "…and N more warnings", and one `--stats` row per skip reason
 - [x] `docs/prompt.md`: the prompt verbatim, with a test that runs its example; the README maps each requirement to the code
+- [x] Names: `--company` lists every possible match for a partial or ambiguous name instead of guessing, and a full name where one word belongs gets a hint
 - [x] README Features section, and Mermaid diagrams of the pipeline, layers, and data model
 
 ## Later (not planned for the submission)

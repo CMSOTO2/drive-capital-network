@@ -1,4 +1,4 @@
-import { suggest } from '../utils/suggest.ts';
+import { possibleMatches } from '../utils/suggest.ts';
 import { compareNames } from '../utils/text.ts';
 import type { Network } from './network.ts';
 
@@ -40,8 +40,12 @@ export const strongestPartner = ({
 
 export interface MissingCompany {
   name: string;
-  /** A company in the report with a similar name, if there is one. */
-  suggestion: string | undefined;
+  /**
+   * Companies in the report the name could mean, alphabetically: other
+   * letter case, names it's the start of, or close spellings. Several
+   * matches are all listed, so the user picks instead of the tool guessing.
+   */
+  matches: string[];
 }
 
 export interface CompanySelection {
@@ -53,8 +57,9 @@ export interface CompanySelection {
 
 /**
  * Narrows the report to the requested companies, for `--company`. Names must
- * match exactly; a near miss is reported as missing with a suggestion.
- * An empty request selects every company.
+ * match exactly, since `ACME` and `Acme` can be different companies; a near
+ * miss is reported as missing, with every company it could mean. An empty
+ * request selects every company.
  */
 export function selectCompanies(
   report: CompanyRelationships[],
@@ -71,7 +76,7 @@ export function selectCompanies(
   const found = new Set(selected.map(({ company }) => company));
   const missing = [...wanted]
     .filter((name) => !found.has(name))
-    .map((name) => ({ name, suggestion: suggest(name, companyNames) }));
+    .map((name) => ({ name, matches: possibleMatches(name, companyNames) }));
 
   return { selected, missing };
 }

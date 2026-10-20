@@ -128,15 +128,28 @@ describe('selectCompanies', () => {
     expect(selectCompanies(report, ['Globexx', 'Initech', 'ACME'])).toEqual({
       selected: [report[0]],
       missing: [
-        { name: 'Globexx', suggestion: 'Globex' },
-        { name: 'Initech', suggestion: undefined },
+        { name: 'Globexx', matches: ['Globex'] },
+        { name: 'Initech', matches: [] },
       ],
     });
   });
 
   it('matches names exactly, suggesting the right case', () => {
     expect(selectCompanies(report, ['acme']).missing).toEqual([
-      { name: 'acme', suggestion: 'ACME' },
+      { name: 'acme', matches: ['ACME'] },
+    ]);
+  });
+
+  it('lists every company a partial or ambiguous name could mean', () => {
+    const similar = [
+      { company: 'ACME', partners: [] },
+      { company: 'Acme', partners: [] },
+      { company: 'Globe', partners: [] },
+      { company: 'Globex', partners: [] },
+    ];
+    expect(selectCompanies(similar, ['Glob', 'acme']).missing).toEqual([
+      { name: 'Glob', matches: ['Globe', 'Globex'] },
+      { name: 'acme', matches: ['ACME', 'Acme'] },
     ]);
   });
 });

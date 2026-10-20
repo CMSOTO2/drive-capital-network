@@ -10,7 +10,7 @@ import { selectCompanies } from '../core/analyze.ts';
 import { formatJsonReport, formatTextReport } from '../core/format.ts';
 import { analyzeLines, type PipelineResult } from '../core/pipeline.ts';
 import { summarize } from '../core/stats.ts';
-import { didYouMean, suggest } from '../utils/suggest.ts';
+import { didYouMean, didYouMeanOneOf, suggest } from '../utils/suggest.ts';
 import { quote } from '../utils/text.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
@@ -180,10 +180,10 @@ export async function main(io: CliIo): Promise<number> {
   }
 
   const { selected, missing } = selectCompanies(result.report, options.company);
-  for (const { name, suggestion } of missing) {
+  for (const { name, matches } of missing) {
     notices += renderMessage(
       'error',
-      `company ${quote(name)} isn't in the input${didYouMean(suggestion)}`,
+      `company ${quote(name)} isn't in the input${didYouMeanOneOf(matches)}`,
       palette,
     );
   }

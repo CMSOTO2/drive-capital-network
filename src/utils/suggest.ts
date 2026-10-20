@@ -1,5 +1,10 @@
-import { SUGGESTION_EDIT_LIMITS, SUGGESTION_MAX_EDITS } from '../constants.ts';
-import { compareNames, quote } from './text.ts';
+import {
+  MAX_LISTED_MATCHES,
+  MIN_PREFIX_MATCH_LENGTH,
+  SUGGESTION_EDIT_LIMITS,
+  SUGGESTION_MAX_EDITS,
+} from '../constants.ts';
+import { compareNames, formatCount, formatList, quote } from './text.ts';
 
 /**
  * Counts the edits needed to turn `a` into `b`. Each of these is one edit:
@@ -98,4 +103,62 @@ export function didYouMean(suggestion: string | undefined): string {
   return suggestion === undefined
     ? ''
     : ` (did you mean ${quote(suggestion)}?)`;
+}
+
+/**
+ * Every candidate `word` could mean, for hints that shouldn't guess between
+ * them, alphabetically:
+ *
+ * - names it's the start of: `Glob` → `Globe`, `Globex`
+ * - the closest spellings, ignoring case: `acme` → `ACME`, `Acme`, and
+ *   `Globx` → `Globe`, `Globex` (one edit each). `Globexx` only gets
+ *   `Globex`, since `Globe` is two edits away.
+ *
+ * Empty when `word` is itself a candidate.
+ */
+export function possibleMatches(
+  word: string,
+  candidates: Iterable<string>,
+): string[] {
+  const lowerWord = word.toLowerCase();
+  const maxEdits = maxSuggestionEdits(word.length);
+  const startsWithWord: string[] = [];
+  let closest: string[] = [];
+  let closestDistance = Infinity;
+
+  for (const candidate of candidates) {
+    if (candidate === word) return [];
+    const lowerCandidate = candidate.toLowerCase();
+
+    if (
+      word.length >= MIN_PREFIX_MATCH_LENGTH &&
+      lowerCandidate.startsWith(lowerWord)
+    ) {
+      startsWithWord.push(candidate);
+    }
+
+    if (Math.abs(candidate.length - word.length) > maxEdits) continue;
+    const distance = editDistance(lowerWord, lowerCandidate);
+    if (distance > maxEdits || distance > closestDistance) continue;
+    if (distance < closestDistance) {
+      closest = [];
+      closestDistance = distance;
+    }
+    closest.push(candidate);
+  }
+
+  return [...new Set([...startsWithWord, ...closest])].toSorted(compareNames);
+}
+
+/**
+ * ` (did you mean "Globe" or "Globex"?)` for one or more matches, or an
+ * empty string for none. Lists at most MAX_LISTED_MATCHES and counts the rest.
+ */
+export function didYouMeanOneOf(matches: readonly string[]): string {
+  if (matches.length === 0) return '';
+  const listed = matches.slice(0, MAX_LISTED_MATCHES);
+  const unlisted = matches.length - listed.length;
+  const more =
+    unlisted === 0 ? '' : ` ${formatCount(unlisted)} more also match`;
+  return ` (did you mean ${formatList(listed.map((match) => quote(match)))}?${more})`;
 }

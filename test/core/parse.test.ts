@@ -141,8 +141,26 @@ describe('parseLine', () => {
     });
 
     it('rejects too many words', () => {
-      expect(errorOf('Partner Chris Smith')).toBe(
+      expect(errorOf('Partner Chris Smith2')).toBe(
         'Partner expects 1 argument but got 2 (usage: Partner <Name>)',
+      );
+    });
+
+    it('suggests one word when a partner or company gets a full name', () => {
+      expect(errorOf('Partner Chris Smith')).toBe(
+        'Partner expects 1 argument but got 2 (usage: Partner <Name>); names are a single word (did you mean "Partner ChrisSmith"?)',
+      );
+      expect(errorOf('Company Acme Holdings Inc')).toMatch(
+        /\(did you mean "Company AcmeHoldingsInc"\?\)$/,
+      );
+    });
+
+    it('gives no full-name hint where the extra word may not be a name', () => {
+      expect(errorOf('Contact Sam Chris call today')).not.toContain(
+        'single word',
+      );
+      expect(errorOf('Employee Sarah Connor ACME')).not.toContain(
+        'single word',
       );
     });
 

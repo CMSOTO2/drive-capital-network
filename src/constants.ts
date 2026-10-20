@@ -91,6 +91,15 @@ export const SUGGESTION_EDIT_LIMITS = [
 
 export const SUGGESTION_MAX_EDITS = 2;
 
+/**
+ * A `--company` name this long or longer also matches the companies it's the
+ * start of (`Glob` → `Globe`, `Globex`). Shorter ones would match too much.
+ */
+export const MIN_PREFIX_MATCH_LENGTH = 3;
+
+/** Most names a hint lists when several match; the rest are only counted. */
+export const MAX_LISTED_MATCHES = 5;
+
 /** Why a line was skipped, with the label used in `--stats`. */
 export const SKIP_REASONS = {
   unknownCommand: 'unknown command',

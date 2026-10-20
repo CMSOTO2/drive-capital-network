@@ -3,6 +3,7 @@ import {
   COMMAND_SYNTAX,
   COMMENT_PREFIX,
   KEYWORDS,
+  NAME_PATTERN,
   type CommandKind,
   type Keyword,
   type SkipReason,
@@ -54,9 +55,25 @@ function unknownCommand(word: string): ParseResult {
   return failure(message, [0], 'unknownCommand');
 }
 
-function wrongWordCount(keyword: Keyword, got: number): ParseResult {
+/**
+ * For `Partner Chris Smith`: a full name where one word belongs. Only for the
+ * commands that take a single name, where the extra words can't be anything
+ * else; in `Contact Sam Chris call today` the extra word isn't part of a name.
+ */
+function fullNameHint(keyword: Keyword, args: readonly string[]): string {
+  const takesOneName = COMMAND_SYNTAX[keyword].fields.length === 1;
+  const allWordsAreNames = args.every((word) => NAME_PATTERN.test(word));
+  if (!takesOneName || args.length < 2 || !allWordsAreNames) return '';
+  return `; names are a single word${didYouMean(`${keyword} ${args.join('')}`)}`;
+}
+
+function wrongWordCount(
+  keyword: Keyword,
+  args: readonly string[],
+): ParseResult {
   const { fields, usage } = COMMAND_SYNTAX[keyword];
   const expected = fields.length;
+  const got = args.length;
   const noun = expected === 1 ? 'argument' : 'arguments';
 
   // Too many words: point at the extras. Too few: point at the keyword.
@@ -67,7 +84,7 @@ function wrongWordCount(keyword: Keyword, got: number): ParseResult {
   const words = got > expected ? extraWords : [0];
 
   return failure(
-    `${keyword} expects ${expected} ${noun} but got ${got} (usage: ${usage})`,
+    `${keyword} expects ${expected} ${noun} but got ${got} (usage: ${usage})${fullNameHint(keyword, args)}`,
     words,
     'wrongWordCount',
   );
@@ -94,7 +111,7 @@ export function parseLine(line: string): ParseResult {
 
   const { kind, fields } = COMMAND_SYNTAX[keyword];
   if (args.length !== fields.length) {
-    return wrongWordCount(keyword, args.length);
+    return wrongWordCount(keyword, args);
   }
 
   // Pair each word with its field name, e.g. `Employee Laurie Globex` becomes

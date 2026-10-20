@@ -1,0 +1,13 @@
+# Full names where one word belongs, and companies with similar names
+Partner Chris
+Partner Molly Jones
+Company Acme Corp
+Company ACME
+Company Acme
+Company Globe
+Company Globex
+Employee Laurie Globex
+Employee Abdi ACME
+Contact Laurie Chris email
+Contact Laurie Molly call
+Contact Abdi Chris coffee
