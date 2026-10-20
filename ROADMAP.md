@@ -74,7 +74,7 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] Names: `--company` lists every possible match for a partial or ambiguous name instead of guessing, and a full name where one word belongs gets a hint
 - [x] Feature list, and Mermaid diagrams of the pipeline, layers, and data model
 - [x] `pnpm demo`: one example per flag, checked by a test
-- [x] README cut to the basics and the prompt's required sections; the full reference moved to `docs/usage.md` and `docs/development.md`
+- [x] README cut to the basics, the prompt's required sections, and a Scope section saying what's core and what I'd cut; the full reference moved to `docs/usage.md` and `docs/development.md`
 
 ## Later (not planned for the submission)
 

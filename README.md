@@ -11,7 +11,7 @@ Globex: Chris (2)
 Hooli: Molly (1)
 ```
 
-**Contents:** [Run it](#run-it) · [Requirements checklist](#requirements-checklist) · [How it works](#how-it-works) · [Assumptions and edge cases](#assumptions-and-edge-cases) · [How I used LLMs](#how-i-used-llms) · [What was challenging](#what-was-challenging) · [More docs](#more-docs)
+**Contents:** [Run it](#run-it) · [Requirements checklist](#requirements-checklist) · [How it works](#how-it-works) · [Scope](#scope) · [Assumptions and edge cases](#assumptions-and-edge-cases) · [How I used LLMs](#how-i-used-llms) · [What was challenging](#what-was-challenging) · [More docs](#more-docs)
 
 ## Run it
 
@@ -79,6 +79,15 @@ The core logic is under 500 lines in [`src/core/`](./src/core/): `parse.ts` → 
 - **Fixed rules for ties and ordering**, so the same input always gives the same output.
 - **Validate input with Zod.** The TypeScript types come from the schemas, so the types and the runtime checks can't drift apart.
 - **TypeScript, as a CLI.** TypeScript is my strongest language. The input is a file and the output is text people pipe and script, so the effort went into the command line rather than a web UI.
+
+## Scope
+
+The prompt asks for quality software built like a product rather than a one-off tool, so this goes well beyond the minimum. The part that answers the prompt is small: `src/core/` (under 500 lines), its tests, and the example files.
+
+The rest is there to show how I'd handle the parts of product work that usually get skipped. On a real internal tool for a small team, I'd sort it like this:
+
+- **Keep:** warnings with line numbers and hints, `--strict`, `--format json`, `--company`, the scenario tests, and CI.
+- **Cut, or wait until there's a need:** commit-message linting, the CHANGELOG, CONTRIBUTING and the pull request template, `--plain`, the telemetry design record, and the stress-test generator (until a real file got big enough to need it).
 
 ## Assumptions and edge cases
 

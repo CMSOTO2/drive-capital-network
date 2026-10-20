@@ -18,8 +18,8 @@ Usage
   cat file | ${PROGRAM_NAME} [options]
 
 Reads one command per line from FILE, or from STDIN when FILE is missing
-or "${STDIN_ARG}". Prints every company, alphabetically, with the partner
-who has had the most contacts with its employees.
+or "${STDIN_ARG}". Prints every company, alphabetically, with the partner who
+has had the most contacts with its employees.
 
 Options
   -c, --company <name>      Only report this company; repeat for more
