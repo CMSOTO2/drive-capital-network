@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --disable-warning=ExperimentalWarning
 // Runs the CLI straight from the TypeScript source, so reviewers can skip the
 // build: `pnpm install && ./analyze_network examples/input.txt`.
-// Node strips the types itself (Node 22.18+); see README "Quick start".
+// Node strips the types itself (Node 22.18+); see README "Run it".
 import { runFromProcess } from './src/cli/main.ts';
 
 await runFromProcess();

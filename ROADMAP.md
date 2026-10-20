@@ -73,6 +73,7 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] `docs/prompt.md`: the prompt verbatim, with a test that runs its example; the README maps each requirement to the code
 - [x] Names: `--company` lists every possible match for a partial or ambiguous name instead of guessing, and a full name where one word belongs gets a hint
 - [x] Feature list, and Mermaid diagrams of the pipeline, layers, and data model
+- [x] `pnpm demo`: one example per flag, checked by a test
 - [x] README cut to the basics and the prompt's required sections; the full reference moved to `docs/usage.md` and `docs/development.md`
 
 ## Later (not planned for the submission)

@@ -33,6 +33,7 @@ A few things to try:
 ./analyze_network --company Globex --details examples/input.txt  # one company, with every partner's strength
 ./analyze_network --format json examples/input.txt              # JSON for scripts
 ./analyze_network --help                                         # every option
+pnpm -s demo                                                     # one labelled example of every flag
 ```
 
 [`examples/scenarios/`](./examples/scenarios/) has 31 more inputs, each with its expected output: happy paths, common mistakes, and awkward files.

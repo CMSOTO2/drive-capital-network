@@ -25,4 +25,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - `docs/prompt.md`: the take-home prompt, verbatim, with a test that runs its example exactly as written. The README maps each requirement to the code that meets it.
 - `--company` lists every company a partial, mistyped, or wrong-case name could mean (`did you mean "Globe" or "Globex"?`) instead of guessing one.
 - `Partner Chris Smith` and `Company Acme Corp` get a hint that names are a single word (`did you mean "Partner ChrisSmith"?`).
+- `pnpm -s demo`: one labelled example of every flag, filterable by name, that also checks each example's exit code.
 - Tooling: TypeScript 7, Vitest, oxlint, oxfmt, husky + lint-staged pre-commit hook, commitlint, and GitHub Actions CI.

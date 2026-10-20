@@ -4,15 +4,16 @@ How the project is checked and tested. [ARCHITECTURE.md](../ARCHITECTURE.md) cov
 
 ## Commands
 
-| Command                                 | What it does                                                        |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm test`                             | Vitest unit and end-to-end tests                                    |
-| `pnpm test:watch`                       | Tests in watch mode                                                 |
-| `pnpm lint`                             | oxlint; warnings fail the run                                       |
-| `pnpm format`                           | oxfmt, rewriting files in place                                     |
-| `pnpm typecheck`                        | `tsc --noEmit`                                                      |
-| `pnpm check`                            | Typecheck, lint, format check, and tests. CI runs exactly this      |
-| `pnpm -s stress --contacts N --out DIR` | Writes a generated stress input and its expected output (see below) |
+| Command                                 | What it does                                                                                                          |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`                             | Vitest unit and end-to-end tests                                                                                      |
+| `pnpm test:watch`                       | Tests in watch mode                                                                                                   |
+| `pnpm lint`                             | oxlint; warnings fail the run                                                                                         |
+| `pnpm format`                           | oxfmt, rewriting files in place                                                                                       |
+| `pnpm typecheck`                        | `tsc --noEmit`                                                                                                        |
+| `pnpm check`                            | Typecheck, lint, format check, and tests. CI runs exactly this                                                        |
+| `pnpm -s demo [name…]`                  | Runs one labelled example of every flag, or only those named (see the [usage guide](./usage.md#one-example-per-flag)) |
+| `pnpm -s stress --contacts N --out DIR` | Writes a generated stress input and its expected output (see below)                                                   |
 
 Requires Node 22.18 or newer and pnpm 10. CI tests Node 22.18 and 24; `.nvmrc` pins 24 for development (`nvm use`).
 

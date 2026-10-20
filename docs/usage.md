@@ -4,6 +4,7 @@ Everything the CLI does, with example output. The [README](../README.md) covers 
 
 - [Ways to run it](#ways-to-run-it)
 - [Options and exit codes](#options-and-exit-codes)
+- [One example per flag](#one-example-per-flag)
 - [Invalid input](#invalid-input)
 - [Asking about specific companies](#asking-about-specific-companies)
 - [Stats](#stats)
@@ -52,6 +53,39 @@ Input comes from `file`, or from STDIN when `file` is missing or `-`. The report
 | `0`       | Report printed. Invalid lines, if any, were skipped with a warning         |
 | `1`       | Invalid input with `--strict`, or a `--company` that isn't in the input    |
 | `2`       | Bad options, unreadable file, or no input (e.g. run with nothing piped in) |
+
+## One example per flag
+
+`pnpm -s demo` runs every example below and prints a labelled header, the command, its output, and its exit code. Pass names to run only some:
+
+```bash
+pnpm -s demo                  # every example
+pnpm -s demo strict json      # only the examples whose name contains "strict" or "json"
+pnpm -s demo --list           # names and descriptions only
+```
+
+Each example states the exit code it should end with, and the run fails if one doesn't, so the demo stays accurate (`test/scripts/demo.test.ts` checks the same thing). The examples live in [`scripts/demo.ts`](../scripts/demo.ts).
+
+| Name                | Command                                                                                   | What it shows                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `basic`             | `analyze-network examples/input.txt`                                                      | The prompt's example: every company and its strongest partner |
+| `stdin`             | `cat examples/input.txt \| analyze-network`                                               | The same input piped in on STDIN                              |
+| `details`           | `analyze-network --details examples/input.txt`                                            | --details (-d): every partner's strength, not just the top    |
+| `company`           | `analyze-network --company Globex -c Hooli examples/input.txt`                            | --company (-c): only the companies you ask for                |
+| `company-typo`      | `analyze-network --company Globexx examples/input.txt`                                    | --company with a typo: a hint, and exit 1                     |
+| `company-ambiguous` | `analyze-network --quiet --company Glob examples/scenarios/30-full-and-partial-names.txt` | --company with a partial name: every match is listed          |
+| `json`              | `analyze-network --format json examples/input.txt`                                        | --format json (-f json): the report as JSON, with rankings    |
+| `warnings`          | `analyze-network examples/edge-cases.txt`                                                 | Bad lines: a warning each on stderr; the report still prints  |
+| `quiet`             | `analyze-network --quiet examples/edge-cases.txt`                                         | --quiet (-q): the same file without the warnings              |
+| `strict`            | `analyze-network --strict examples/edge-cases.txt`                                        | --strict: stop at the first bad line, no report, exit 1       |
+| `stats`             | `analyze-network --stats --quiet examples/edge-cases.txt`                                 | --stats (-s): counts of everything, and skips by reason       |
+| `stats-json`        | `analyze-network --stats --format json --quiet examples/input.txt`                        | --stats with --format json: both as JSON                      |
+| `plain`             | `analyze-network --plain examples/edge-cases.txt`                                         | --plain: warnings in words for screen readers, ASCII only     |
+| `no-color`          | `analyze-network --no-color examples/edge-cases.txt`                                      | --no-color: warnings without color (NO_COLOR=1 works too)     |
+| `file-typo`         | `analyze-network examples/inptu.txt`                                                      | A mistyped file name: a hint, and exit 2                      |
+| `option-typo`       | `analyze-network --detail examples/input.txt`                                             | A mistyped option: a hint, and exit 2                         |
+| `version`           | `analyze-network --version`                                                               | --version (-v)                                                |
+| `help`              | `analyze-network --help`                                                                  | --help (-h): every option                                     |
 
 ## Invalid input
 

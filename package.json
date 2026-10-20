@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "prepare": "husky",
+    "demo": "node scripts/demo.ts",
     "stress": "node scripts/stress.ts"
   },
   "dependencies": {
