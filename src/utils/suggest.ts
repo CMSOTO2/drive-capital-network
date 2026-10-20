@@ -1,5 +1,6 @@
 import {
   MAX_LISTED_MATCHES,
+  MAX_SUGGESTION_LENGTH,
   MIN_PREFIX_MATCH_LENGTH,
   SUGGESTION_EDIT_LIMITS,
   SUGGESTION_MAX_EDITS,
@@ -7,50 +8,59 @@ import {
 import { compareNames, formatCount, formatList, quote } from './text.ts';
 
 /**
- * Counts the edits needed to turn `a` into `b`. Each of these is one edit:
+ * How many single-letter edits turn `a` into `b`. Each of these is one edit:
  *
- * - deleting a letter        (`coffee` → `cofee`)
- * - inserting a letter       (`cofee`  → `coffee`)
- * - replacing a letter       (`call`   → `cell`)
- * - swapping two neighbours  (`Contcat` → `Contact`)
+ * - delete a letter            `coffee` → `cofee`
+ * - insert a letter            `cofee` → `coffee`
+ * - replace a letter           `call` → `cell`
+ * - swap two letters next to each other   `Contcat` → `Contact`
  *
- * This is the "optimal string alignment" variant of Levenshtein distance.
- * It fills in a table where `cost(i, j)` is the number of edits between the
- * first `i` letters of `a` and the first `j` letters of `b`; the answer is
- * the bottom-right cell.
+ * It works from the end of both words. If the last letters match, they cost
+ * nothing and we compare what's left. If not, we try each kind of edit and
+ * keep the cheapest. Answers for each pair of lengths are remembered, so no
+ * pair is worked out twice.
+ *
+ * Only call it on short words (see MAX_SUGGESTION_LENGTH): the work grows
+ * with the length of `a` times the length of `b`.
  */
 export function editDistance(a: string, b: string): number {
-  const width = b.length + 1;
-  const cells = Array.from<number>({ length: (a.length + 1) * width }).fill(0);
-  const cost = (i: number, j: number): number => cells[i * width + j] ?? 0;
-  const setCost = (i: number, j: number, value: number): void => {
-    cells[i * width + j] = value;
-  };
+  const remembered = new Map<string, number>();
 
-  // Against an empty string, every letter is one insertion or deletion.
-  for (let i = 0; i <= a.length; i += 1) setCost(i, 0, i);
-  for (let j = 0; j <= b.length; j += 1) setCost(0, j, j);
+  // Edits needed to turn the first `i` letters of `a` into the first `j` of `b`.
+  function edits(i: number, j: number): number {
+    // One word is used up: add or delete the rest of the other one.
+    if (i === 0) return j;
+    if (j === 0) return i;
 
-  for (let i = 1; i <= a.length; i += 1) {
-    for (let j = 1; j <= b.length; j += 1) {
-      const sameLetter = a[i - 1] === b[j - 1];
+    const key = `${i},${j}`;
+    const known = remembered.get(key);
+    if (known !== undefined) return known;
 
-      const deletion = cost(i - 1, j) + 1;
-      const insertion = cost(i, j - 1) + 1;
-      const substitution = cost(i - 1, j - 1) + (sameLetter ? 0 : 1);
-      let best = Math.min(deletion, insertion, substitution);
+    const lastOfA = a[i - 1];
+    const lastOfB = b[j - 1];
 
-      const swappedNeighbours =
-        i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1];
-      if (swappedNeighbours) {
-        best = Math.min(best, cost(i - 2, j - 2) + 1);
-      }
-
-      setCost(i, j, best);
+    let best: number;
+    if (lastOfA === lastOfB) {
+      best = edits(i - 1, j - 1);
+    } else {
+      const deleteFromA = edits(i - 1, j) + 1;
+      const insertIntoA = edits(i, j - 1) + 1;
+      const replaceInA = edits(i - 1, j - 1) + 1;
+      best = Math.min(deleteFromA, insertIntoA, replaceInA);
     }
+
+    // `ac` against `ca`: swapping the last two letters is one edit.
+    const lastTwoAreSwapped =
+      i > 1 && j > 1 && lastOfA === b[j - 2] && a[i - 2] === lastOfB;
+    if (lastTwoAreSwapped) {
+      best = Math.min(best, edits(i - 2, j - 2) + 1);
+    }
+
+    remembered.set(key, best);
+    return best;
   }
 
-  return cost(a.length, b.length);
+  return edits(a.length, b.length);
 }
 
 /** How many edits a word of this length can be off by and still get a hint. */
@@ -66,13 +76,14 @@ export function maxSuggestionEdits(length: number): number {
  *
  * Letter case is ignored, so `partner` suggests `Partner`. Short words allow
  * fewer edits, so `Al` doesn't suggest `Bo`. Ties go to the alphabetically
- * first candidate. Returns undefined when `word` is itself a candidate or
- * nothing is close enough.
+ * first candidate. Returns undefined when `word` is itself a candidate,
+ * nothing is close enough, or `word` is longer than MAX_SUGGESTION_LENGTH.
  */
 export function suggest(
   word: string,
   candidates: Iterable<string>,
 ): string | undefined {
+  if (word.length > MAX_SUGGESTION_LENGTH) return undefined;
   const maxEdits = maxSuggestionEdits(word.length);
   let best: { candidate: string; distance: number } | undefined;
 
@@ -122,6 +133,7 @@ export function possibleMatches(
 ): string[] {
   const lowerWord = word.toLowerCase();
   const maxEdits = maxSuggestionEdits(word.length);
+  const canCompareSpelling = word.length <= MAX_SUGGESTION_LENGTH;
   const startsWithWord: string[] = [];
   let closest: string[] = [];
   let closestDistance = Infinity;
@@ -137,6 +149,7 @@ export function possibleMatches(
       startsWithWord.push(candidate);
     }
 
+    if (!canCompareSpelling) continue;
     if (Math.abs(candidate.length - word.length) > maxEdits) continue;
     const distance = editDistance(lowerWord, lowerCandidate);
     if (distance > maxEdits || distance > closestDistance) continue;

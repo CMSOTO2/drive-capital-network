@@ -26,4 +26,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - `--company` lists every company a partial, mistyped, or wrong-case name could mean (`did you mean "Globe" or "Globex"?`) instead of guessing one.
 - `Partner Chris Smith` and `Company Acme Corp` get a hint that names are a single word (`did you mean "Partner ChrisSmith"?`).
 - `pnpm -s demo`: one labelled example of every flag, filterable by name, that also checks each example's exit code.
+- "Did you mean" lookups skip words over 40 letters. Before, two very long names that differed by a letter ran the tool out of memory; the comparison itself is now a short recursive function with the same results.
 - Tooling: TypeScript 7, Vitest, oxlint, oxfmt, husky + lint-staged pre-commit hook, commitlint, and GitHub Actions CI.

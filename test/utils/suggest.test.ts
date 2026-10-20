@@ -83,6 +83,22 @@ describe('didYouMean', () => {
   });
 });
 
+describe('very long words', () => {
+  const long = `Long${'A'.repeat(100_000)}`;
+  const nearlyLong = `Long${'A'.repeat(99_999)}B`;
+
+  it('get no close-spelling hint, and return at once', () => {
+    const started = performance.now();
+    expect(suggest(nearlyLong, [long])).toBeUndefined();
+    expect(possibleMatches(nearlyLong, [long])).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it('still match the start of a longer name', () => {
+    expect(possibleMatches('Long', [long])).toEqual([long]);
+  });
+});
+
 describe('possibleMatches', () => {
   const companies = ['ACME', 'Acme', 'Globe', 'Globex', 'Hooli'];
 

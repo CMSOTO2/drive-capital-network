@@ -92,6 +92,13 @@ export const SUGGESTION_EDIT_LIMITS = [
 export const SUGGESTION_MAX_EDITS = 2;
 
 /**
+ * Words longer than this get no close-spelling hint. Comparing two words
+ * takes work proportional to their lengths multiplied, so two 100,000-letter
+ * names would take billions of steps, and nobody mistypes a 40-letter name.
+ */
+export const MAX_SUGGESTION_LENGTH = 40;
+
+/**
  * A `--company` name this long or longer also matches the companies it's the
  * start of (`Glob` → `Globe`, `Globex`). Shorter ones would match too much.
  */
