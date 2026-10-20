@@ -72,7 +72,8 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] UX pass: hints for mistyped options and file names, long lines and names cut down in warnings, a blank line between warnings and the report on a terminal, a `--stats` pointer under "…and N more warnings", and one `--stats` row per skip reason
 - [x] `docs/prompt.md`: the prompt verbatim, with a test that runs its example; the README maps each requirement to the code
 - [x] Names: `--company` lists every possible match for a partial or ambiguous name instead of guessing, and a full name where one word belongs gets a hint
-- [x] README Features section, and Mermaid diagrams of the pipeline, layers, and data model
+- [x] Feature list, and Mermaid diagrams of the pipeline, layers, and data model
+- [x] README cut to the basics and the prompt's required sections; the full reference moved to `docs/usage.md` and `docs/development.md`
 
 ## Later (not planned for the submission)
 

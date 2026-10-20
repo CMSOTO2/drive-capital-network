@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Drive Capital take-home: a TypeScript CLI that reports the strongest partner relationship per company. The prompt's rules come first: it's kept verbatim in `docs/prompt.md` (never edit it), and `test/docs/prompt.test.ts` runs its example. Before changing behavior, check it against the prompt; where the prompt is unclear, record the interpretation in the README's "Assumptions and edge cases" table. See README.md for the output format and assumptions.
+Drive Capital take-home: a TypeScript CLI that reports the strongest partner relationship per company. The prompt's rules come first: it's kept verbatim in `docs/prompt.md` (never edit it), and `test/docs/prompt.test.ts` runs its example. Before changing behavior, check it against the prompt; where the prompt is unclear, record the interpretation in the README's "Assumptions and edge cases" table and in the full list in `docs/usage.md`. See README.md for the output format and assumptions.
 
 ## Docs stay in sync with the code
 
-README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md (under "Unreleased") describe the code. After any change to `src/`, `test/`, scripts, or config, reread all four and fix whatever no longer matches (module table, data model, rules, edge-case table, run commands, roadmap checkboxes) **in the same commit**. Significant design choices get a record in `docs/decisions/`. CONTRIBUTING.md is the human-facing version of these rules; keep the two consistent.
+README.md, ARCHITECTURE.md, ROADMAP.md, CHANGELOG.md (under "Unreleased"), `docs/usage.md`, and `docs/development.md` describe the code. The README stays short: the basics and the prompt's required sections, with details in `docs/`. After any change to `src/`, `test/`, scripts, or config, reread all of them and fix whatever no longer matches (module table, data model, rules, edge-case table, run commands, roadmap checkboxes) **in the same commit**. Significant design choices get a record in `docs/decisions/`. CONTRIBUTING.md is the human-facing version of these rules; keep the two consistent.
 
 ## Commits
 

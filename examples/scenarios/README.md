@@ -8,7 +8,7 @@ Try any of them:
 ./analyze_network examples/scenarios/22-undeclared-names.txt
 ```
 
-The expected outputs were worked out by hand from the rules in the main README (or, for the stress file, by an independent reference model), not copied from the tool's output, so the tests check the behaviour rather than repeat it.
+The expected outputs were worked out by hand from the rules in the [main README](../../README.md#assumptions-and-edge-cases) and the [usage guide](../../docs/usage.md#every-edge-case) (or, for the stress file, by an independent reference model), not copied from the tool's output, so the tests check the behaviour rather than repeat it.
 
 ## Happy paths
 

@@ -33,6 +33,8 @@ test/                   mirrors src/ (test/core/parse.test.ts, …), plus helper
 examples/               the prompt's example and an edge-case file, each with expected output
 └── scenarios/          31 small inputs (happy, unhappy, awkward) plus a 12,000-line stress file, each with expected output
 docs/prompt.md          the take-home prompt, verbatim: the source of truth for requirements
+docs/usage.md           every option, example output, and the full edge-case list
+docs/development.md     tooling, hooks, CI, and stress testing
 docs/decisions/         architecture decision records
 ```
 

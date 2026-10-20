@@ -12,6 +12,6 @@
 
 ## Docs
 
-- [ ] README.md, ARCHITECTURE.md, and ROADMAP.md still match the code
+- [ ] README.md, ARCHITECTURE.md, ROADMAP.md, and `docs/` still match the code
 - [ ] CHANGELOG.md updated under "Unreleased" for user-visible changes
 - [ ] Decision record added in `docs/decisions/` for a significant design choice

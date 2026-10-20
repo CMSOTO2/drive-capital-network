@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping out. This guide covers the workflow; [ARCHITECTURE.md](./ARCHITECTURE.md) covers the code. The requirements come from [the prompt](./docs/prompt.md), kept verbatim; don't edit it. If a change touches behavior the prompt describes, check it against the prompt, and record any interpretation in the README's "Assumptions and edge cases" table.
+Thanks for helping out. This guide covers the workflow; [ARCHITECTURE.md](./ARCHITECTURE.md) covers the code. The requirements come from [the prompt](./docs/prompt.md), kept verbatim; don't edit it. If a change touches behavior the prompt describes, check it against the prompt, and record any interpretation in the README's "Assumptions and edge cases" table and the full list in [`docs/usage.md`](./docs/usage.md#every-edge-case).
 
 ## Setup
 
@@ -49,10 +49,10 @@ Scopes name the area changed: a module (`parse`, `network`, `report`, `stats`, `
 - **Erasable TypeScript only** (no enums or namespaces), so `pnpm dev` can run the source directly. Relative imports use `.ts` extensions.
 - **Tests mirror `src/`.** New behavior needs a test. If you change output, update the `examples/*.expected.txt` golden files on purpose, not just to make tests pass. To cover a new case, add `examples/scenarios/<name>.txt` and a hand-written `<name>.expected.txt`; the scenario test picks it up automatically.
 
-For anything that touches per-line work, run the stress comparison on a big input (`pnpm -s stress --contacts 1000000 --out /tmp/stress`, see the README) and check time and memory before and after.
+For anything that touches per-line work, run the stress comparison on a big input (`pnpm -s stress --contacts 1000000 --out /tmp/stress`, see [docs/development.md](./docs/development.md#performance-and-stress-testing)) and check time and memory before and after.
 
 Formatting (oxfmt) and lint fixes (oxlint) are applied automatically on commit. Don't bypass the hooks with `--no-verify`.
 
 ## Docs stay with the code
 
-README.md, ARCHITECTURE.md, ROADMAP.md, and CHANGELOG.md describe the code as it is. When a change makes any of them wrong (module table, edge-case table, options, exit codes, roadmap checkboxes), fix it in the same pull request. A significant design choice also gets a short record in [`docs/decisions/`](./docs/decisions/).
+README.md, ARCHITECTURE.md, ROADMAP.md, CHANGELOG.md, [`docs/usage.md`](./docs/usage.md), and [`docs/development.md`](./docs/development.md) describe the code as it is. When a change makes any of them wrong (module table, edge-case table, options, exit codes, roadmap checkboxes), fix it in the same pull request. A significant design choice also gets a short record in [`docs/decisions/`](./docs/decisions/).
