@@ -75,6 +75,7 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] Feature list, and Mermaid diagrams of the pipeline, layers, and data model
 - [x] `pnpm demo`: one example per flag, checked by a test
 - [x] Escape invisible and terminal-control characters wherever input is echoed in a message
+- [x] An Origin line on every decision record: whose idea it was
 - [x] README cut to the basics, the prompt's required sections, and a Scope section saying what's core and what I'd cut; the full reference moved to `docs/usage.md` and `docs/development.md`
 
 ## Later (not planned for the submission)

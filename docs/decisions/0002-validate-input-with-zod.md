@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** Mine: I asked for Zod for validation. Claude designed the two-step check (structure first, then the schema) and the custom messages.
 
 ## Context
 

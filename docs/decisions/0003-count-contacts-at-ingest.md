@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** Claude's suggestion, accepted. It was part of the plan Claude proposed before any code, which I approved.
 
 ## Context
 

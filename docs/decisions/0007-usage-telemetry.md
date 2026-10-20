@@ -2,6 +2,7 @@
 
 - **Status:** Proposed. Nothing in this version sends data anywhere.
 - **Date:** 2026-10-19
+- **Origin:** My request, Claude's design. I asked for analytics; Claude pointed out the privacy problem with sending data from a file full of names and proposed local `--stats` plus this written design. I chose that option.
 
 ## Context
 

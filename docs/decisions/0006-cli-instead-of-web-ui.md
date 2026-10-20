@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** My question, Claude's answer. I asked whether a frontend would improve the experience; Claude argued for putting the effort into the CLI instead, and I agreed.
 
 ## Context
 

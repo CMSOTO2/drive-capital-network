@@ -119,6 +119,7 @@ I used Claude Code throughout, and treated its output like a teammate's work.
 - **Tooling and docs:** it set up TypeScript, the linters, git hooks, and CI, and drafted this README and the other docs. A rule in [CLAUDE.md](./CLAUDE.md) makes docs change in the same commit as the code they describe.
 - **Product questions:** I used it as a sounding board. When I asked about a web UI, it argued for putting the effort into the CLI. When I asked for analytics, it pointed out that sending usage data from a tool full of people's names is a privacy problem, so we built local `--stats` instead. I agreed with both calls.
 - **Verification:** it checked its claims rather than asserting them. For example, Node 22 support was proven by running the whole test suite on Node 22.
+- **Whose idea was what:** each [decision record](./docs/decisions/) has an Origin line. TypeScript, the tools, and Zod were my choices; counting as contacts arrive, warn-and-skip, and the tie rule were Claude's, which I accepted; the CLI-only approach, local stats instead of telemetry, and the accessibility work came from my questions, with Claude's answers.
 - **Where it slipped:** twice, a script that edited the docs stopped partway, and the commit went in with half-updated docs. It caught both on review and fixed them before anything was pushed. That's why docs and code are now checked together on every commit.
 
 ## What was challenging

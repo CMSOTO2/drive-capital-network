@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** My request, Claude's design. I asked for accessibility to be taken into account; Claude proposed the specifics (`--plain`, never dimming information, words before color), and I accepted them.
 
 ## Context
 

@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** Mine: TypeScript, pnpm, Vitest, oxlint, and oxfmt were my choices from the start. Supporting Node 22.18 as well as 24 was one of several reviewer-experience options Claude offered; I chose it.
 
 ## Context
 

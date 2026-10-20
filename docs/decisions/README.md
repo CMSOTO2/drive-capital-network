@@ -13,4 +13,6 @@ Short records of significant design choices: the context, what we decided, and w
 | [0007](./0007-usage-telemetry.md)                | Usage telemetry: designed, not built     | Proposed |
 | [0008](./0008-accessible-output.md)              | Accessible output                        | Accepted |
 
-New records copy the shape of an existing one: Status, Context, Decision, Consequences.
+New records copy the shape of an existing one: Status, Date, Origin, Context, Decision, Consequences.
+
+**Origin** says whose idea the decision was: mine, Claude's (accepted or changed), or my question with Claude's answer. It's the honest record of how the work was split; the README's LLM section summarizes it.

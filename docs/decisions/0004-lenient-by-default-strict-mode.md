@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-19
+- **Origin:** Claude's suggestion, accepted. Warn-and-skip was in the initial plan, with `--strict` listed as future work; Claude built it in the CLI phase.
 
 ## Context
 
