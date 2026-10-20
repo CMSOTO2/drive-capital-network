@@ -3,7 +3,7 @@ import { parseArgs } from 'node:util';
 import { STDIN_ARG } from '../constants.ts';
 import { CliOptionsSchema, type CliOptions } from '../schemas/options.ts';
 import { didYouMean, suggest } from '../utils/suggest.ts';
-import { quote } from '../utils/text.ts';
+import { escapeText, quote } from '../utils/text.ts';
 
 export type ArgsResult =
   | { ok: true; options: CliOptions }
@@ -63,7 +63,7 @@ export function parseCliArgs(argv: readonly string[]): ArgsResult {
   if (positionals.length > 1) {
     return {
       ok: false,
-      message: `expected at most one input file, got ${positionals.length}: ${positionals.join(' ')}`,
+      message: `expected at most one input file, got ${positionals.length}: ${escapeText(positionals.join(' '))}`,
     };
   }
 

@@ -7,7 +7,7 @@ import {
 } from '../constants.ts';
 import type { Diagnostic, PipelineResult } from '../core/pipeline.ts';
 import type { RunStats } from '../core/stats.ts';
-import { formatCount, quote } from '../utils/text.ts';
+import { formatCount, quote, showCharacter } from '../utils/text.ts';
 
 type Style = Parameters<typeof styleText>[0];
 
@@ -87,8 +87,13 @@ export function renderMessage(
   return `${label} ${message}\n`;
 }
 
+interface Span {
+  start: number;
+  end: number;
+}
+
 /** Where each word of `text` starts and ends. */
-function wordSpans(text: string): { start: number; end: number }[] {
+function wordSpans(text: string): Span[] {
   return [...text.matchAll(/\S+/g)].map((match) => ({
     start: match.index,
     end: match.index + match[0].length,
@@ -101,11 +106,17 @@ const uniqueSorted = (positions: readonly number[]): number[] =>
 
 /**
  * A row of `^` under the given words, e.g. `            ^^^^` for word 2 of
- * `Contact Laurie Chris text`. Tabs are shown as single spaces so the markers
- * line up.
+ * `Contact Laurie Chris text`. For a line as it's shown in a warning, use
+ * `visibleLine`, which also accounts for tabs and escaped characters.
  */
 export function underlineWords(text: string, words: readonly number[]): string {
-  const spans = wordSpans(text);
+  return underlineSpans(wordSpans(text), words);
+}
+
+function underlineSpans(
+  spans: readonly Span[],
+  words: readonly number[],
+): string {
   let underline = '';
   for (const position of uniqueSorted(words)) {
     const span = spans[position];
@@ -114,6 +125,33 @@ export function underlineWords(text: string, words: readonly number[]): string {
     underline += '^'.repeat(span.end - span.start);
   }
   return underline;
+}
+
+/**
+ * A line as a warning shows it. Tabs become single spaces, and characters you
+ * couldn't see or that would act on the terminal become visible escapes
+ * (`showCharacter`), so `Chris<non-breaking space>Smith` shows as
+ * `Chris\u00a0Smith`. Escapes make the line longer, so this also returns
+ * where each word of the original line ends up, to keep the `^` markers
+ * under the right words.
+ */
+export function visibleLine(text: string): { text: string; spans: Span[] } {
+  // shownAt[i] is where the character at index i of `text` starts once shown.
+  const shownAt: number[] = [];
+  let shown = '';
+  let index = 0;
+  for (const character of text) {
+    shownAt[index] = shown.length;
+    shown += character === '\t' ? ' ' : showCharacter(character);
+    index += character.length;
+  }
+  shownAt[index] = shown.length;
+
+  const spans = wordSpans(text).map(({ start, end }) => ({
+    start: shownAt[start] ?? 0,
+    end: shownAt[end] ?? shown.length,
+  }));
+  return { text: shown, spans };
 }
 
 /**
@@ -130,27 +168,28 @@ export function excerpt(
   words: readonly number[],
   ellipsis: string,
 ): { text: string; underline: string } {
-  const underline = underlineWords(text, words);
-  if (text.length <= MAX_EXCERPT_WIDTH) return { text, underline };
+  const line = visibleLine(text);
+  const underline = underlineSpans(line.spans, words);
+  const shown = line.text;
+  if (shown.length <= MAX_EXCERPT_WIDTH) return { text: shown, underline };
 
   // Start at the beginning of the line when the first word at fault fits
   // there; otherwise start a little before that word.
   const [firstWord] = uniqueSorted(words);
-  const focus =
-    firstWord === undefined ? undefined : wordSpans(text)[firstWord];
+  const focus = firstWord === undefined ? undefined : line.spans[firstWord];
   const fitsAtStart = focus === undefined || focus.end <= MAX_EXCERPT_WIDTH;
   const start = fitsAtStart
     ? 0
     : Math.max(
         0,
-        Math.min(focus.start - EXCERPT_LEAD, text.length - MAX_EXCERPT_WIDTH),
+        Math.min(focus.start - EXCERPT_LEAD, shown.length - MAX_EXCERPT_WIDTH),
       );
   const end = start + MAX_EXCERPT_WIDTH;
 
   const cutBefore = start > 0 ? ellipsis : '';
-  const cutAfter = end < text.length ? ellipsis : '';
+  const cutAfter = end < shown.length ? ellipsis : '';
   return {
-    text: cutBefore + text.slice(start, end) + cutAfter,
+    text: cutBefore + shown.slice(start, end) + cutAfter,
     underline: (
       ' '.repeat(cutBefore.length) + underline.slice(start, end)
     ).trimEnd(),
@@ -188,7 +227,7 @@ export function renderDiagnostic(
 ): string {
   const lineNumber = String(diagnostic.line);
   const shown = excerpt(
-    diagnostic.text.replaceAll('\t', ' '),
+    diagnostic.text,
     diagnostic.words,
     layout === 'plain' ? '...' : '…',
   );

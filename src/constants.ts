@@ -70,6 +70,22 @@ export const MAX_EXCERPT_WIDTH = 100;
 /** How much of a cut line to keep before the first word at fault. */
 export const EXCERPT_LEAD = 20;
 
+/**
+ * Characters that are shown escaped when input is echoed in a message:
+ * Unicode's control, format, and separator groups. They're either invisible
+ * (a non-breaking space, a zero-width space) or act on the terminal (an
+ * escape code), so a file could otherwise hide its problem or change the
+ * user's terminal. A plain space is the one exception, handled in code.
+ */
+export const INVISIBLE_CHARACTER = /[\p{C}\p{Z}]/u;
+
+/** Short escapes for the invisible characters people know by name. */
+export const NAMED_ESCAPES: Readonly<Record<string, string>> = {
+  '\t': String.raw`\t`,
+  '\n': String.raw`\n`,
+  '\r': String.raw`\r`,
+};
+
 /** Names longer than this are shortened when quoted in a message. */
 export const MAX_QUOTED_LENGTH = 40;
 

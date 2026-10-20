@@ -108,7 +108,7 @@ Where the prompt is silent or unclear, this is what I decided:
 | A partner with no contacts                     | Never printed                                                                                                   |
 | A partner and an employee with the same name   | Allowed; they're separate                                                                                       |
 
-It also handles messy files: Windows and old Mac line endings, a byte order mark, tabs and extra spaces, a missing final newline, and empty files. Typos get "did you mean" hints, and a million contacts run in about 2 seconds. The [full edge-case list](./docs/usage.md#every-edge-case) has every case.
+It also handles messy files: Windows and old Mac line endings, a byte order mark, tabs and extra spaces, a missing final newline, and empty files. Invisible or terminal-control characters in a bad line are shown escaped, so a file can't change your terminal. Typos get "did you mean" hints, and a million contacts run in about 2 seconds. The [full edge-case list](./docs/usage.md#every-edge-case) has every case.
 
 ## How I used LLMs
 

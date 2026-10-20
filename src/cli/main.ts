@@ -11,7 +11,7 @@ import { formatJsonReport, formatTextReport } from '../core/format.ts';
 import { analyzeLines, type PipelineResult } from '../core/pipeline.ts';
 import { summarize } from '../core/stats.ts';
 import { didYouMean, didYouMeanOneOf, suggest } from '../utils/suggest.ts';
-import { quote } from '../utils/text.ts';
+import { escapeText, quote } from '../utils/text.ts';
 import { parseCliArgs } from './args.ts';
 import { HELP_TEXT, PROGRAM_NAME, USAGE_HINT } from './help.ts';
 import { readLines } from './lines.ts';
@@ -75,7 +75,7 @@ async function suggestFile(path: string): Promise<string | undefined> {
 /** Fails fast with a clear message before any line is read. */
 async function openFile(path: string): Promise<Readable> {
   const cannotRead = (reason: string) =>
-    new InputError(`cannot read "${path}": ${reason}`);
+    new InputError(`cannot read "${escapeText(path)}": ${reason}`);
 
   let isDirectory: boolean;
   try {

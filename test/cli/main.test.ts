@@ -198,6 +198,17 @@ describe('main', () => {
     });
   });
 
+  describe('untrusted input', () => {
+    it('never echoes a terminal escape code from the file', async () => {
+      const { stderr } = await runCli([], {
+        stdin: 'Company ACME\nPartner Ev\u001b[31mil\n',
+        env: { FORCE_COLOR: '0' },
+      });
+      expect(stderr).not.toContain('\u001b');
+      expect(stderr).toContain(String.raw`Ev\u001b[31mil`);
+    });
+  });
+
   describe('--company with a partial or ambiguous name', () => {
     const similar =
       'Company Globe\nCompany Globex\nCompany ACME\nCompany Acme\n';

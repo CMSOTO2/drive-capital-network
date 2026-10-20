@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   compareNames,
   formatCount,
+  escapeText,
   formatList,
   quote,
+  showCharacter,
 } from '../../src/utils/text.ts';
 
 describe('formatList', () => {
@@ -59,5 +61,41 @@ describe('quote', () => {
     expect(quote(`Long${'A'.repeat(5000)}1`)).toBe(
       `"Long${'A'.repeat(16)}...${'A'.repeat(9)}1" (5,005 characters)`,
     );
+  });
+});
+
+describe('showCharacter and escapeText', () => {
+  it.each([
+    ['\u001b', String.raw`\u001b`],
+    ['\u00a0', String.raw`\u00a0`],
+    ['\u200b', String.raw`\u200b`],
+    ['\u0000', String.raw`\u0000`],
+    ['\t', String.raw`\t`],
+    ['\r', String.raw`\r`],
+  ])('makes %j visible', (character, shown) => {
+    expect(showCharacter(character)).toBe(shown);
+  });
+
+  it.each([' ', 'a', 'Z', 'ë', '💥', '#'])(
+    'leaves %j as typed',
+    (character) => {
+      expect(showCharacter(character)).toBe(character);
+    },
+  );
+
+  it('turns a terminal color code into plain text', () => {
+    expect(escapeText('Ev\u001b[31mil')).toBe(String.raw`Ev\u001b[31mil`);
+  });
+});
+
+describe('quote with invisible characters', () => {
+  it('escapes them', () => {
+    expect(quote('Chris\u00a0Smith')).toBe(String.raw`"Chris\u00a0Smith"`);
+  });
+
+  it('escapes both ends of a shortened name', () => {
+    const shown = quote(`\u001b${'A'.repeat(100)}\u001b`);
+    expect(shown).not.toContain('\u001b');
+    expect(shown).toMatch(/^"\\u001bA+\.\.\.A+\\u001b" \(102 characters\)$/);
   });
 });

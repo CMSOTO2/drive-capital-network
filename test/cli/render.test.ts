@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createPalette,
   excerpt,
+  visibleLine,
   renderDiagnostic,
   renderDiagnostics,
   chooseOutputStyle,
@@ -149,6 +150,32 @@ describe('renderDiagnostic with a long line', () => {
       /line 3 reads: Contact Laurie Chris text x .*x \.\.\.\n/,
     );
     expect(output).toContain('word at fault: "text"');
+  });
+});
+
+describe('renderDiagnostic with invisible characters', () => {
+  const hidden: Diagnostic = {
+    ...diagnostic,
+    text: 'Contact Laurie Chris\u00a0text\u001b[31m',
+    words: [3],
+  };
+
+  it('never writes a raw control character', () => {
+    for (const layout of ['rich', 'plain'] as const) {
+      const output = renderDiagnostic(hidden, 'warning', plain, layout);
+      expect(output.includes('\u001b')).toBe(false);
+      expect(output.includes('\u00a0')).toBe(false);
+    }
+  });
+
+  it('keeps the markers under the word at fault', () => {
+    const [, shown = '', markers = ''] = renderDiagnostic(
+      hidden,
+      'warning',
+      plain,
+    ).split('\n');
+    const start = markers.indexOf('^');
+    expect(shown.slice(start, markers.length)).toBe(String.raw`text\u001b[31m`);
   });
 });
 
@@ -351,6 +378,39 @@ describe('renderStats', () => {
       plain,
     );
     expect(output).toContain('  skipped lines: none\n');
+  });
+});
+
+describe('visibleLine', () => {
+  it('leaves an ordinary line alone', () => {
+    expect(visibleLine('Contact Laurie Chris call')).toEqual({
+      text: 'Contact Laurie Chris call',
+      spans: [
+        { start: 0, end: 7 },
+        { start: 8, end: 14 },
+        { start: 15, end: 20 },
+        { start: 21, end: 25 },
+      ],
+    });
+  });
+
+  it('shows tabs as spaces', () => {
+    expect(visibleLine('Partner\tChris').text).toBe('Partner Chris');
+  });
+
+  it('escapes invisible characters and moves the words after them', () => {
+    const line = visibleLine('Partner Chris\u00a0Smith');
+    expect(line.text).toBe(String.raw`Partner Chris\u00a0Smith`);
+    const smith = line.spans[2];
+    expect(line.text.slice(smith?.start, smith?.end)).toBe('Smith');
+  });
+
+  it('escapes a terminal code inside a word, keeping the whole word marked', () => {
+    const line = visibleLine('Partner Ev\u001b[31mil');
+    const name = line.spans[1];
+    expect(line.text.slice(name?.start, name?.end)).toBe(
+      String.raw`Ev\u001b[31mil`,
+    );
   });
 });
 
