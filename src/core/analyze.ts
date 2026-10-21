@@ -1,6 +1,6 @@
 import { possibleMatches } from '../utils/suggest.ts';
 import { compareNames } from '../utils/text.ts';
-import type { Network } from './network.ts';
+import { strengthsFor, type NetworkView } from './network.ts';
 
 export interface PartnerStrength {
   partner: string;
@@ -24,10 +24,12 @@ function byStrengthThenName(a: PartnerStrength, b: PartnerStrength): number {
  * Ranks every partner's relationship to every company. Companies are sorted
  * alphabetically; partners with zero contacts are left out.
  */
-export function rankRelationships(network: Network): CompanyRelationships[] {
+export function rankRelationships(
+  network: NetworkView,
+): CompanyRelationships[] {
   return [...network.companies].toSorted(compareNames).map((company) => ({
     company,
-    partners: [...network.strengthsFor(company)]
+    partners: [...strengthsFor(network, company)]
       .map(([partner, strength]) => ({ partner, strength }))
       .toSorted(byStrengthThenName),
   }));

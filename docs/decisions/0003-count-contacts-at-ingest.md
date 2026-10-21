@@ -10,7 +10,7 @@ Relationship strength is the number of contacts between a partner and all of a c
 
 ## Decision
 
-`Network` keeps `Map<company, Map<partner, count>>`. Each `Contact` looks up its employee's company and increments that pair immediately; the contact itself isn't stored.
+The network keeps `Map<company, Map<partner, count>>`. Each `Contact` looks up its employee's company and increments that pair immediately; the contact itself isn't stored.
 
 ## Consequences
 

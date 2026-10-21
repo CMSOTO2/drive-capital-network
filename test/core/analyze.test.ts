@@ -5,7 +5,7 @@ import {
   selectCompanies,
   strongestPartner,
 } from '../../src/core/analyze.ts';
-import { Network } from '../../src/core/network.ts';
+import { createNetwork } from '../../src/core/network.ts';
 import { networkFrom } from '../helpers/network.ts';
 
 describe('rankRelationships', () => {
@@ -83,7 +83,7 @@ describe('rankRelationships', () => {
   });
 
   it('returns an empty list for an empty network', () => {
-    expect(rankRelationships(new Network())).toEqual([]);
+    expect(rankRelationships(createNetwork())).toEqual([]);
   });
 });
 

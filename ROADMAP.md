@@ -22,7 +22,7 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 
 ## Phase 2: Network model (`feat:`)
 
-- [x] `src/core/network.ts`: `Network.apply`, counting at ingest
+- [x] `src/core/network.ts`: `applyCommand`, counting at ingest
 - [x] Tests: counts across several employees of one company, duplicate declarations, employee redeclared at another company, contacts with unknown employee or partner, forward references, shared names across namespaces
 
 ## Phase 3: Analysis and formatting (`feat:`)
@@ -76,11 +76,12 @@ Each phase lands as one or more [Conventional Commits](https://www.conventionalc
 - [x] `pnpm demo`: one example per flag, checked by a test
 - [x] Escape invisible and terminal-control characters wherever input is echoed in a message
 - [x] An Origin line on every decision record: whose idea it was
+- [x] The network as plain data and functions instead of a class, with read-only views for code that only reads it
 - [x] README cut to the basics, the prompt's required sections, and a Scope section saying what's core and what I'd cut; the full reference moved to `docs/usage.md` and `docs/development.md`
 
 ## Later (not planned for the submission)
 
-- **Weighted contact types:** a coffee probably says more about a relationship than an email. This would be a weight table in `constants.ts` and one line in `Network`.
+- **Weighted contact types:** a coffee probably says more about a relationship than an email. This would be a weight table in `constants.ts` and one line in `countContact` in `network.ts`.
 - **Keep a raw contact log** next to the counts, to answer the prompt's other questions:
   - "Who do we know who works at ACME?"
   - "Who at Drive can introduce me to the CEO of ACME?" (needs titles and a graph traversal)

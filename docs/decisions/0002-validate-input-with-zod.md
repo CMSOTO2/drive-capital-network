@@ -15,5 +15,5 @@ Each command is a Zod schema in `src/schemas/command.ts`, and the `Command` type
 ## Consequences
 
 - One source of truth for both the shape and the rules of every command.
-- `Network` only ever receives valid commands, so it doesn't re-check names or contact types.
+- The network model only ever receives valid commands, so it doesn't re-check names or contact types.
 - One runtime dependency. Zod is widely used and stable, and its error customization made "did you mean" hints straightforward.

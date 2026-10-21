@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { Network } from '../../src/core/network.ts';
+import {
+  applyCommand,
+  countNetwork,
+  createNetwork,
+  strengthsFor,
+  type Network,
+} from '../../src/core/network.ts';
 import type { Command } from '../../src/schemas/command.ts';
 
 const partner = (name: string): Command => ({ kind: 'partner', name });
@@ -22,16 +28,16 @@ const contact = (
 });
 
 const strengths = (network: Network, name: string) =>
-  Object.fromEntries(network.strengthsFor(name));
+  Object.fromEntries(strengthsFor(network, name));
 
-describe('Network', () => {
+describe('network', () => {
   let network: Network;
 
   const applyAll = (commands: Command[]) =>
-    commands.map((command) => network.apply(command));
+    commands.map((command) => applyCommand(network, command));
 
   beforeEach(() => {
-    network = new Network();
+    network = createNetwork();
   });
 
   describe('declarations', () => {
@@ -53,11 +59,11 @@ describe('Network', () => {
 
     it('accepts the same employee declared twice at the same company', () => {
       applyAll([company('ACME'), employee('Sarah', 'ACME')]);
-      expect(network.apply(employee('Sarah', 'ACME'))).toBeUndefined();
+      expect(applyCommand(network, employee('Sarah', 'ACME'))).toBeUndefined();
     });
 
     it('rejects an employee at an undeclared company', () => {
-      expect(network.apply(employee('Sarah', 'Initech'))?.message).toBe(
+      expect(applyCommand(network, employee('Sarah', 'Initech'))?.message).toBe(
         'employee "Sarah" works at company "Initech", which hasn\'t been declared',
       );
     });
@@ -69,18 +75,18 @@ describe('Network', () => {
         company('ACME'),
         employee('Sarah', 'Hooli'),
       ]);
-      expect(network.apply(employee('Sarah', 'ACME'))?.message).toBe(
+      expect(applyCommand(network, employee('Sarah', 'ACME'))?.message).toBe(
         'employee "Sarah" is already declared at "Hooli"; employee names are unique, so "ACME" is ignored',
       );
 
-      network.apply(contact('Sarah', 'Chris'));
+      applyCommand(network, contact('Sarah', 'Chris'));
       expect(strengths(network, 'Hooli')).toEqual({ Chris: 1 });
       expect(strengths(network, 'ACME')).toEqual({});
     });
 
     it('suggests a declared company with a similar name', () => {
-      network.apply(company('ACME'));
-      expect(network.apply(employee('Sam', 'Acmee'))?.message).toBe(
+      applyCommand(network, company('ACME'));
+      expect(applyCommand(network, employee('Sam', 'Acmee'))?.message).toBe(
         'employee "Sam" works at company "Acmee", which hasn\'t been declared (did you mean "ACME"?)',
       );
     });
@@ -134,39 +140,41 @@ describe('Network', () => {
     });
 
     it('skips a contact with an undeclared employee', () => {
-      expect(network.apply(contact('Ollie', 'Chris'))?.message).toBe(
+      expect(applyCommand(network, contact('Ollie', 'Chris'))?.message).toBe(
         'contact skipped: employee "Ollie" hasn\'t been declared',
       );
     });
 
     it('skips a contact with an undeclared partner', () => {
-      expect(network.apply(contact('Laurie', 'Masha'))?.message).toBe(
+      expect(applyCommand(network, contact('Laurie', 'Masha'))?.message).toBe(
         'contact skipped: partner "Masha" hasn\'t been declared',
       );
       expect(strengths(network, 'Globex')).toEqual({});
     });
 
     it('suggests a declared employee or partner with a similar name', () => {
-      expect(network.apply(contact('Lauri', 'Chriss'))?.message).toBe(
+      expect(applyCommand(network, contact('Lauri', 'Chriss'))?.message).toBe(
         'contact skipped: employee "Lauri" hasn\'t been declared (did you mean "Laurie"?) and partner "Chriss" hasn\'t been declared (did you mean "Chris"?)',
       );
     });
 
     it('spots an employee and partner given in the wrong order', () => {
-      expect(network.apply(contact('Chris', 'Laurie', 'call'))?.message).toBe(
+      expect(
+        applyCommand(network, contact('Chris', 'Laurie', 'call'))?.message,
+      ).toBe(
         'contact skipped: "Chris" is a partner and "Laurie" is an employee; the order is Contact Laurie Chris call',
       );
     });
 
     it('names both problems when employee and partner are undeclared', () => {
-      expect(network.apply(contact('Ollie', 'Masha'))?.message).toBe(
+      expect(applyCommand(network, contact('Ollie', 'Masha'))?.message).toBe(
         'contact skipped: employee "Ollie" hasn\'t been declared and partner "Masha" hasn\'t been declared',
       );
     });
 
     it('does not resolve forward references: declarations must come first', () => {
-      expect(network.apply(contact('Laurie', 'Rezzan'))).toBeDefined();
-      network.apply(partner('Rezzan'));
+      expect(applyCommand(network, contact('Laurie', 'Rezzan'))).toBeDefined();
+      applyCommand(network, partner('Rezzan'));
       expect(strengths(network, 'Globex')).toEqual({});
     });
   });
@@ -177,7 +185,7 @@ describe('Network', () => {
     });
 
     it('names the fields at fault and the undeclared names', () => {
-      expect(network.apply(contact('Ghost', 'Masha'))).toMatchObject({
+      expect(applyCommand(network, contact('Ghost', 'Masha'))).toMatchObject({
         fields: ['employee', 'partner'],
         undeclared: [
           { kind: 'employee', name: 'Ghost' },
@@ -187,15 +195,15 @@ describe('Network', () => {
     });
 
     it('reports an undeclared company on an employee', () => {
-      expect(network.apply(employee('Ann', 'Initech'))).toMatchObject({
+      expect(applyCommand(network, employee('Ann', 'Initech'))).toMatchObject({
         fields: ['company'],
         undeclared: [{ kind: 'company', name: 'Initech' }],
       });
     });
 
     it('has nothing undeclared for a redeclared employee', () => {
-      network.apply(company('Hooli'));
-      expect(network.apply(employee('Sam', 'Hooli'))).toMatchObject({
+      applyCommand(network, company('Hooli'));
+      expect(applyCommand(network, employee('Sam', 'Hooli'))).toMatchObject({
         fields: ['company'],
         undeclared: [],
       });
@@ -214,7 +222,7 @@ describe('Network', () => {
       contact('Sam', 'Chris', 'email'),
       contact('Ghost', 'Chris', 'call'),
     ]);
-    expect(network.counts).toEqual({
+    expect(countNetwork(network)).toEqual({
       partners: 2,
       companies: 2,
       companiesWithContacts: 1,
@@ -224,8 +232,8 @@ describe('Network', () => {
   });
 
   it('returns an empty map for a company with no contacts', () => {
-    network.apply(company('ACME'));
-    expect(network.strengthsFor('ACME').size).toBe(0);
-    expect(network.strengthsFor('Unknown').size).toBe(0);
+    applyCommand(network, company('ACME'));
+    expect(strengthsFor(network, 'ACME').size).toBe(0);
+    expect(strengthsFor(network, 'Unknown').size).toBe(0);
   });
 });

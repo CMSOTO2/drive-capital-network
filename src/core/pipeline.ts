@@ -6,7 +6,13 @@ import {
 import type { Command } from '../schemas/command.ts';
 import { quote } from '../utils/text.ts';
 import { rankRelationships, type CompanyRelationships } from './analyze.ts';
-import { Network, type NameReference, type NetworkCounts } from './network.ts';
+import {
+  applyCommand,
+  countNetwork,
+  createNetwork,
+  type NameReference,
+  type NetworkCounts,
+} from './network.ts';
 import { parseLine, wordPositionOf } from './parse.ts';
 
 /** A problem with one input line. The line was skipped. */
@@ -81,7 +87,7 @@ export async function analyzeLines(
   lines: AsyncIterable<string> | Iterable<string>,
   { strict = false }: PipelineOptions = {},
 ): Promise<PipelineResult> {
-  const network = new Network();
+  const network = createNetwork();
   const diagnostics: Diagnostic[] = [];
   const skippedByReason: Partial<Record<SkipReason, number>> = {};
   const waitingForDeclaration = new Map<string, Diagnostic[]>();
@@ -124,7 +130,9 @@ export async function analyzeLines(
     }
 
     const { command } = parsed;
-    const problem = network.apply(command, { suggestNames: keepsDetails() });
+    const problem = applyCommand(network, command, {
+      suggestNames: keepsDetails(),
+    });
 
     if (problem === undefined) {
       commandCount += 1;
@@ -174,7 +182,7 @@ export async function analyzeLines(
     lineCount: lineNumber,
     ignoredLineCount,
     commandCount,
-    counts: network.counts,
+    counts: countNetwork(network),
     aborted,
   };
 }
