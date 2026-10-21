@@ -36,7 +36,7 @@ A few things to try:
 pnpm -s demo                                                     # one labelled example of every flag
 ```
 
-[`examples/scenarios/`](./examples/scenarios/) has 31 more inputs, each with its expected output: happy paths, common mistakes, and awkward files.
+[`examples/scenarios/`](./examples/scenarios/) has 32 more inputs, each with its expected output: 31 small ones (happy paths, common mistakes, and awkward files) and a 12,000-line stress file.
 
 ## Requirements checklist
 

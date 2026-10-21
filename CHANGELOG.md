@@ -18,7 +18,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - `--stats` / `-s`: a summary on stderr of everything declared, contacts by type, and skipped lines by reason (JSON with `--format json`).
 - `--plain`: screen-reader-friendly diagnostics with no color, decoration, or non-ASCII characters; automatic when `TERM=dumb`.
 - `pnpm -s stress`: generates long, messy inputs with the output they must produce, for differential and performance testing. A million contacts run in about 2 seconds.
-- Example inputs with expected output: the prompt's example, an edge-case file, and 31 scenarios in `examples/scenarios/` covering happy paths, mistakes, and awkward files.
+- Example inputs with expected output: the prompt's example, an edge-case file, and 31 scenarios in `examples/scenarios/` covering happy paths, mistakes, and awkward files, plus a 12,000-line stress file.
 - "Did you mean" hints for mistyped options (`--detail` → `--details`) and file names (`inptu.txt` → `input.txt`, `input` → `input.txt`).
 - Warnings cut lines over 100 characters to an excerpt around the words at fault, and shorten names over 40 characters, so one huge line can't flood the terminal.
 - On a terminal, a blank line separates the warnings from the report. `…and N more warnings` points to `--stats`, and `--stats` lists skipped lines one reason per row.
