@@ -70,7 +70,7 @@ flowchart LR
 2. **Count.** Valid commands update an in-memory network. A contact adds 1 to its company and partner pair right away.
 3. **Report.** At the end, companies are sorted, each company's partners are ranked, and the top one is printed.
 
-The core logic is under 500 lines in [`src/core/`](./src/core/): `parse.ts` → `network.ts` → `analyze.ts` → `format.ts`. Everything in `src/cli/` is the command-line wrapper around it. The core never touches files or the terminal, so every rule is tested with plain strings.
+The core logic is a little over 500 lines in [`src/core/`](./src/core/): `parse.ts` → `network.ts` → `analyze.ts` → `format.ts`. Everything in `src/cli/` is the command-line wrapper around it. The core never touches files or the terminal, so every rule is tested with plain strings.
 
 **Key decisions** (each has a one-page record in [`docs/decisions/`](./docs/decisions/)):
 
@@ -82,7 +82,7 @@ The core logic is under 500 lines in [`src/core/`](./src/core/): `parse.ts` → 
 
 ## Scope
 
-The prompt asks for quality software built like a product rather than a one-off tool, so this goes well beyond the minimum. The part that answers the prompt is small: `src/core/` (under 500 lines), its tests, and the example files.
+The prompt asks for quality software built like a product rather than a one-off tool, so this goes well beyond the minimum. The part that answers the prompt is small: four files in `src/core/` (`parse`, `network`, `analyze`, `format`, a little over 500 lines together), their tests, and the example files.
 
 The rest is there to show how I'd handle the parts of product work that usually get skipped. On a real internal tool for a small team, I'd sort it like this:
 

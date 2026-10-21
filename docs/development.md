@@ -40,7 +40,7 @@ pnpm -s stress --contacts 1000000 --seed 7 --out /tmp/stress
 | Input                                             | Time  | Peak memory |
 | ------------------------------------------------- | ----- | ----------- |
 | 200,000 contacts (237k lines, 30k bad)            | 0.5 s | 156 MB      |
-| 1,000,000 contacts (1.18M lines, 46 MB, 148k bad) | 2.1 s | 295 MB      |
+| 1,000,000 contacts (1.18M lines, 46 MB, 148k bad) | 2.3 s | 313 MB      |
 
 Measured on an Apple Silicon laptop, Node 24. `test/scripts/stress.test.ts` runs the comparison on 25 seeds and on 200,000 contacts piped through the CLI, and [`examples/scenarios/90-stress-10k-contacts.txt`](../examples/scenarios/90-stress-10k-contacts.txt) is a committed 12,000-line sample.
 
